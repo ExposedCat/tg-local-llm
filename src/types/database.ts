@@ -1,16 +1,17 @@
 import type { Collection } from 'mongodb';
 
-export interface User {
-  userId: number;
-  name: string;
-}
+export type ThreadMessage = {
+  role: 'user' | 'assistant';
+  fromId: number | null;
+  content: string;
+};
 
-export interface Chat {
+export type Thread = {
   chatId: number;
-  title: string;
-}
+  threadId: number;
+  messages: ThreadMessage[];
+};
 
-export interface Database {
-  user: Collection<User>;
-  chat: Collection<Chat>;
-}
+export type Database = {
+  thread: Collection<Thread>;
+};

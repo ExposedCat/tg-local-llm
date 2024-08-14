@@ -1,0 +1,2 @@
+start = Hi
+stop = Bye

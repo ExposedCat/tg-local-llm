@@ -1,11 +1,8 @@
 import { Composer } from 'grammy';
 
-import type { CustomContext } from '../types/context.js';
+import type { DefaultContext } from '../types/context.js';
 
-export const startController = new Composer<CustomContext>();
+export const startController = new Composer<DefaultContext>();
 startController.command('start', async ctx => {
-  await ctx.text('start', {
-    name: ctx.dbEntities.user.name,
-    chatName: ctx.dbEntities.chat?.title ?? 'PM',
-  });
+  await ctx.text('start');
 });
