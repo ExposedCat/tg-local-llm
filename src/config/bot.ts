@@ -43,5 +43,10 @@ export async function startBot(database: Database) {
   setupMiddlewares(bot, i18n);
   setupControllers(bot);
 
-  return new Promise(resolve => bot.start({ onStart: () => resolve(undefined) }));
+  return new Promise(resolve =>
+    bot.start({
+      drop_pending_updates: true,
+      onStart: () => resolve(undefined),
+    }),
+  );
 }
