@@ -56,8 +56,6 @@ export async function respond(history: ThreadMessage[], message: string, senderN
     message: { content },
   } = await ollama.chat({ model: 'llama3.1', messages: newHistory });
 
-  console.log(`Raw response\n=====\n${content}\n=====`);
-
   if (!content.includes(MESSAGE_TAG)) {
     content = `${MESSAGE_TAG}\n${content}`;
   }
