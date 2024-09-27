@@ -4,6 +4,7 @@ export type ThreadMessage = {
   role: 'user' | 'assistant';
   fromId: number | null;
   content: string;
+  images?: string[];
 };
 
 export type Thread = {
