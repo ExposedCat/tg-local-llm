@@ -50,13 +50,30 @@ messageController.chatType(['group', 'supergroup']).on([':caption', ':text'], as
       images,
     });
 
-    const responseMessage = await ctx.reply(response, {
-      reply_parameters: {
-        message_id: messageId,
-        allow_sending_without_reply: true,
-      },
-      message_thread_id: ctx.message.is_topic_message ? threadId : undefined,
-    });
+    const safeRespond = async (formatting = true) => {
+      try {
+        return await ctx.reply(response, {
+          reply_parameters: {
+            message_id: messageId,
+            allow_sending_without_reply: true,
+          },
+          parse_mode: formatting ? 'Markdown' : undefined,
+          message_thread_id: ctx.message.is_topic_message ? threadId : undefined,
+        });
+      } catch (error) {
+        if (formatting) {
+          return safeRespond(false);
+        } else {
+          console.error('Failed to respond:', error);
+          return null;
+        }
+      }
+    };
+
+    const responseMessage = await safeRespond();
+    if (!responseMessage) {
+      return;
+    }
 
     const newMessages: ThreadMessage[] = [
       {
