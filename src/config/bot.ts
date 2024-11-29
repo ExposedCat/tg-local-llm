@@ -1,14 +1,14 @@
-import { Bot as TelegramBot, session } from 'grammy';
 import type { I18n } from '@grammyjs/i18n';
+import { Bot as TelegramBot, session } from 'grammy';
 
-import type { Bot } from '../types/telegram.js';
-import type { Database } from '../types/database.js';
-import type { DefaultContext } from '../types/context.js';
-import { createReplyWithTextFunc } from '../services/context.js';
-import { resolvePath } from '../helpers/resolve-path.js';
-import { stopController } from '../controllers/stop.js';
-import { startController } from '../controllers/start.js';
 import { messageController } from '../controllers/message.js';
+import { startController } from '../controllers/start.js';
+import { stopController } from '../controllers/stop.js';
+import { resolvePath } from '../helpers/resolve-path.js';
+import { createReplyWithTextFunc } from '../services/context.js';
+import type { DefaultContext } from '../types/context.js';
+import type { Database } from '../types/database.js';
+import type { Bot } from '../types/telegram.js';
 import { initLocaleEngine } from './locale-engine.js';
 
 function extendContext(bot: Bot, database: Database) {

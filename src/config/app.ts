@@ -1,7 +1,7 @@
-import { validateEnv } from '../helpers/validate-env.js';
 import { loadEnv } from '../helpers/load-env.js';
-import { connectToDb } from './database.js';
+import { validateEnv } from '../helpers/validate-env.js';
 import { startBot } from './bot.js';
+import { connectToDb } from './database.js';
 
 export async function startApp() {
   try {

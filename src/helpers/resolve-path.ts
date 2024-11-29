@@ -1,5 +1,5 @@
-import { fileURLToPath } from 'url';
 import pathModule from 'path';
+import { fileURLToPath } from 'url';
 
 export function resolvePath(localPath: string, targetPath: string) {
   const __filename = fileURLToPath(localPath);

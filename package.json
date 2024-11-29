@@ -10,16 +10,10 @@
     "bg:restart": "npm run prepare && pm2 restart telegram-bot",
     "bg:logs": "pm2 logs telegram-bot --lines 1000 -f",
     "start": "npm run compile && node .",
-    "lint": "npx eslint .",
-    "lint:fix": "npm run lint -- --fix"
+    "lint": "npx biome check src/ --write",
+    "format": "npx biome format src/ --write"
   },
-  "keywords": [
-    "telegram",
-    "bot",
-    "grammy",
-    "mongodb",
-    "typescript"
-  ],
+  "keywords": ["telegram", "bot", "grammy", "mongodb", "typescript"],
   "author": "ExposedCat",
   "license": "GPL-3.0-or-later",
   "dependencies": {
@@ -30,6 +24,7 @@
     "ollama": "^0.5.8"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@stylistic/eslint-plugin": "^2.3.0",
     "@tsconfig/recommended": "^1.0.7",
     "@types/node": "^20.14.15",

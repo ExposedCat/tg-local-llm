@@ -1,6 +1,6 @@
-import type { ReplyKeyboardMarkup } from 'grammy/types';
-import type { Api, Context, SessionFlavor } from 'grammy';
 import type { I18nFlavor, TranslationVariables } from '@grammyjs/i18n';
+import type { Api, Context, SessionFlavor } from 'grammy';
+import type { ReplyKeyboardMarkup } from 'grammy/types';
 
 import type { Database } from './database.js';
 

@@ -120,7 +120,7 @@ export async function respond({ history, message, senderName, images }: RespondA
   let {
     message: { content },
   } = await ollama.chat({
-    model: 'llama3.1',
+    model: 'llama3.2:3b',
     messages: newHistory,
   });
 

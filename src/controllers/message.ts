@@ -1,18 +1,19 @@
 import { Composer } from 'grammy';
 
-import type { ThreadMessage } from '../types/database.js';
-import type { DefaultContext } from '../types/context.js';
-import { createThread, getThread, updateThread } from '../services/thread.js';
+import { downloadFile } from '../services/download.js';
 import {
   METADATA_FIELDS_REGEX,
-  respond,
   TAG_SPECIAL_SEQUENCE,
   TAG_SPECIAL_SEQUENCE_ESCAPED,
+  respond,
 } from '../services/response.js';
-import { downloadFile } from '../services/download.js';
+import { createThread, getThread, updateThread } from '../services/thread.js';
+import type { DefaultContext } from '../types/context.js';
+import type { ThreadMessage } from '../types/database.js';
 
 export const messageController = new Composer<DefaultContext>();
 messageController.chatType(['group', 'supergroup']).on([':caption', ':text'], async ctx => {
+  console.log(ctx.message);
   const senderId = ctx.from.id;
   const senderName = ctx.from.first_name;
 
