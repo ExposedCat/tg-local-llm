@@ -1,14 +1,14 @@
 import { Composer } from "grammy";
 import { downloadFile } from "../services/download.js";
 import {
-	TAG_SPECIAL_SEQUENCE_ESCAPED,
-	TAG_SPECIAL_SEQUENCE,
 	METADATA_FIELDS_REGEX,
-} from "../services/prompt";
-import { respond } from "../services/response";
-import { getThread, createThread, updateThread } from "../services/thread";
-import type { DefaultContext } from "../types/context";
-import type { ThreadMessage } from "../types/database";
+	TAG_SPECIAL_SEQUENCE,
+	TAG_SPECIAL_SEQUENCE_ESCAPED,
+} from "../services/prompt.js";
+import { respond } from "../services/response.js";
+import { createThread, getThread, updateThread } from "../services/thread.js";
+import type { DefaultContext } from "../types/context.js";
+import type { ThreadMessage } from "../types/database.js";
 
 export const messageController = new Composer<DefaultContext>();
 messageController

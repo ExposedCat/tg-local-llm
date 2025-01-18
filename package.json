@@ -1,18 +1,25 @@
 {
-	"name": "ts-tg-bot",
+	"name": "tg-ollama-local",
 	"version": "1.0.0",
-	"description": "Telegram bot template in TypeScript ",
+	"description": "Run local LLMs using ollama with Telegram Bot UI",
 	"main": "build/index.js",
 	"scripts": {
-		"compile": "tsc",
-		"postcompile": "cp -r src/locales build",
-		"bg:start": "npm run prepare && pm2 start build/index.js --name telegram-bot",
-		"bg:restart": "npm run prepare && pm2 restart telegram-bot",
-		"bg:logs": "pm2 logs telegram-bot --lines 1000 -f",
-		"start": "npm run compile && node .",
+		"build": "tsc && cp -r src/locales build",
+		"start": "npm run build && node .",
 		"format": "biome format src/ --write; biome lint src/ --write"
 	},
-	"keywords": ["telegram", "bot", "grammy", "mongodb", "typescript"],
+	"keywords": [
+		"telegram",
+		"bot",
+		"grammy",
+		"mongodb",
+		"typescript",
+		"ai",
+		"assistant",
+		"llm",
+		"ollama",
+		"llama"
+	],
 	"author": "ExposedCat",
 	"license": "GPL-3.0-or-later",
 	"dependencies": {
