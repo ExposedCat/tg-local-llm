@@ -8,8 +8,11 @@ import {
 	respond,
 	TAG_SPECIAL_SEQUENCE,
 	TAG_SPECIAL_SEQUENCE_ESCAPED,
-} from "../services/response.js";
-import { downloadFile } from "../services/download.js";
+} from "../services/prompt.js";
+import { respond } from "../services/response.js";
+import { createThread, getThread, updateThread } from "../services/thread.js";
+import type { DefaultContext } from "../types/context.js";
+import type { ThreadMessage } from "../types/database.js";
 
 export const messageController = new Composer<DefaultContext>();
 messageController
