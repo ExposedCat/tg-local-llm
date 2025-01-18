@@ -1,5 +1,5 @@
 {
-	"name": "tg-ollama-local",
+	"name": "tg-ollama",
 	"version": "1.0.0",
 	"description": "Run local LLMs using ollama with Telegram Bot UI",
 	"main": "build/index.js",
