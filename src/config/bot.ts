@@ -1,20 +1,22 @@
-import { Bot as TelegramBot, session } from "grammy";
 import type { I18n } from "@grammyjs/i18n";
+import { Bot as TelegramBot, session } from "grammy";
 
-import type { Bot } from "../types/telegram.js";
-import type { Database } from "../types/database.js";
-import type { DefaultContext } from "../types/context.js";
-import { createReplyWithTextFunc } from "../services/context.js";
-import { resolvePath } from "../helpers/resolve-path.js";
-import { stopController } from "../controllers/stop.js";
-import { startController } from "../controllers/start.js";
+import type { Browser } from "puppeteer";
 import { messageController } from "../controllers/message.js";
+import { startController } from "../controllers/start.js";
+import { stopController } from "../controllers/stop.js";
+import { resolvePath } from "../helpers/resolve-path.js";
+import { createReplyWithTextFunc } from "../services/context.js";
+import type { DefaultContext } from "../types/context.js";
+import type { Database } from "../types/database.js";
+import type { Bot } from "../types/telegram.js";
 import { initLocaleEngine } from "./locale-engine.js";
 
-function extendContext(bot: Bot, database: Database) {
+function extendContext(bot: Bot, database: Database, browser: Browser) {
 	bot.use(async (ctx, next) => {
 		ctx.text = createReplyWithTextFunc(ctx);
 		ctx.db = database;
+		ctx.browser = browser;
 
 		await next();
 	});
@@ -34,12 +36,12 @@ function setupControllers(bot: Bot) {
 	bot.use(messageController);
 }
 
-export async function startBot(database: Database) {
+export async function startBot(database: Database, browser: Browser) {
 	const localesPath = resolvePath(import.meta.url, "../locales");
 	const i18n = initLocaleEngine(localesPath);
 	const bot = new TelegramBot<DefaultContext>(process.env.TOKEN);
 
-	extendContext(bot, database);
+	extendContext(bot, database, browser);
 	setupMiddlewares(bot, i18n);
 	setupControllers(bot);
 

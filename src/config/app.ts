@@ -1,8 +1,10 @@
-import { validateEnv } from "../helpers/validate-env.js";
+import type { Browser } from "puppeteer";
 import { loadEnv } from "../helpers/load-env.js";
-import { connectToDb } from "./database.js";
-import { startBot } from "./bot.js";
+import { validateEnv } from "../helpers/validate-env.js";
+import { startBrowser } from "../services/browser.js";
 import type { Database } from "../types/database.js";
+import { startBot } from "./bot.js";
+import { connectToDb } from "./database.js";
 
 export async function startApp() {
 	try {
@@ -21,10 +23,22 @@ export async function startApp() {
 		process.exit(2);
 	}
 
+	let browser: Browser;
 	try {
-		await startBot(database);
+		browser = await startBrowser();
 	} catch (error) {
-		console.error("Error occurred while starting the bot:", error);
+		console.error("Error occurred while starting browser:", error);
 		process.exit(3);
 	}
+
+	try {
+		await startBot(database, browser);
+	} catch (error) {
+		console.error("Error occurred while starting the bot:", error);
+		process.exit(4);
+	}
+
+	return async () => {
+		await browser.close();
+	};
 }

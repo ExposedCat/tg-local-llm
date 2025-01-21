@@ -59,6 +59,7 @@ messageController
 
 			await ctx.replyWithChatAction("typing");
 			const { response, userMessage } = await respond({
+				browser: ctx.browser,
 				history: thread?.messages ?? [],
 				message: text,
 				senderName,

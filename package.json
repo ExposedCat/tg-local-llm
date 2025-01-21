@@ -28,7 +28,8 @@
 		"dotenv": "^16.0.1",
 		"grammy": "^1.24.1",
 		"mongodb": "^4.9.1",
-		"ollama": "^0.5.8"
+		"ollama": "^0.5.8",
+		"puppeteer": "^24.1.0"
 	},
 	"devDependencies": {
 		"@tsconfig/recommended": "^1.0.8",
