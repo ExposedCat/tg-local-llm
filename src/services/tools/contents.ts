@@ -28,13 +28,18 @@ export async function callGetContentsTool(
 		messages: [
 			{
 				role: "system",
-				content: `Given raw website contents, write a structured summary without missing anything important: \`\`\`${content}\`\`\``,
+				content:
+					"Given raw website contents, write a structured summary without missing anything important. Ignore metadata irrelevant to the page topic.",
+			},
+			{
+				role: "user",
+				content: `Contents: \`\`\`${content}\`\`\``,
 			},
 		],
 	});
 	const summary = summaryResponse.message.content;
 
-	const prefix = `Summary of the url "${url}" contents`;
+	const prefix = `Summary of the url "${url}" contents that Laylo (you) requested`;
 	const postfix =
 		"You can now use get_contents again for another relevant URL if this information is not enough. Otherwise, write a response to user referring to this summary as web search result and mention url of this page as a source. Keep the dialog language the same and translate everything to user language.";
 
