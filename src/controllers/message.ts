@@ -5,7 +5,7 @@ import {
 	TAG_SPECIAL_SEQUENCE,
 	TAG_SPECIAL_SEQUENCE_ESCAPED,
 } from "../services/prompt.js";
-import { respond } from "../services/response.js";
+import { buildUserMessage, respond } from "../services/response.js";
 import { createThread, getThread, updateThread } from "../services/thread.js";
 import type { DefaultContext } from "../types/context.js";
 import type { ThreadMessage } from "../types/database.js";
@@ -37,12 +37,31 @@ messageController
 			: await getThread({ db: ctx.db, chatId, threadId });
 
 		const replyTo = ctx.message.reply_to_message?.from?.id ?? null;
+		const replyToUserName =
+			ctx.message.reply_to_message?.from?.first_name ?? "Unknown Sender";
+		const replyText =
+			ctx.message.reply_to_message?.text ??
+			ctx.message.reply_to_message?.caption ??
+			"<unsupported message>";
+
+		const previousMessages =
+			thread || !replyTo
+				? []
+				: [
+						{
+							...buildUserMessage({
+								message: replyText,
+								senderName: replyToUserName,
+								images: [], // TODO:
+							}),
+							fromId: replyTo,
+						} as ThreadMessage,
+					];
 
 		const shouldReply =
 			thread ||
-			(replyTo
-				? replyTo === ctx.me.id
-				: /^(?:l(?:a|e)(?:y|i)lo|ле(?:и|й)ло),.+/i.test(text));
+			(replyTo && replyTo === ctx.me.id) ||
+			/^(?:l(?:a|e)(?:y|i)lo|ле(?:и|й)ло),.+/i.test(text);
 
 		if (shouldReply) {
 			const images: string[] = [];
@@ -60,7 +79,7 @@ messageController
 			await ctx.replyWithChatAction("typing");
 			const { response, userMessage } = await respond({
 				browser: ctx.browser,
-				history: thread?.messages ?? [],
+				history: thread?.messages ?? previousMessages,
 				message: text,
 				senderName,
 				images,
@@ -93,6 +112,7 @@ messageController
 			}
 
 			const newMessages: ThreadMessage[] = [
+				...previousMessages,
 				{
 					role: "user",
 					fromId: senderId,

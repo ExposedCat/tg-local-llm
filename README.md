@@ -9,6 +9,10 @@ Your digital friend in Telegram messenger, powered up by tools and Artificial In
 - Minimal censorship
 - Realistic character
 
+## Running
+- Use `npm start` to run
+- Use `sudo ./make-service.bash service_name service_description` to create SystemD Service
+
 ## Development / Adjustments
 - Change system prompt at `src/services/prompt.ts`. This includes name and behavior
 - Change `MODEL` at `src/services/response.ts`. Supports any model by [Ollama](https://ollama.com). Model must be pulled first
