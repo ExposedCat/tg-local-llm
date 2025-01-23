@@ -10,6 +10,8 @@ sed -i "s/\$DESCRIPTION/$DESCRIPTION/g" $SERVICE
 sed -i "s/\$USER/$SUDO_USER/g" $SERVICE
 sed -i "s/\$DIR/$DIR/g" $SERVICE
 
+sudo systemctl daemon-reload
+
 echo "Service $SERVICE created successfully"
 echo " - Start it \`systemctl start $1\`"
 echo " - Enable it \`systemctl enable $1\`"
