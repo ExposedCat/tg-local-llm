@@ -1,0 +1,13 @@
+[Unit]
+Description=$DESCRIPTION
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$DIR
+ExecStart=/usr/bin/node .
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
