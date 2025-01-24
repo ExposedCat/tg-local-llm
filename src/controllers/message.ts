@@ -63,9 +63,10 @@ messageController
 					];
 
 		const shouldReply =
-			thread ||
-			(replyTo && replyTo === ctx.me.id) ||
-			/^(?:l(?:a|e)(?:y|i)lo|ле(?:и|й)ло),.+/i.test(rawText);
+			(thread ||
+				(replyTo && replyTo === ctx.me.id) ||
+				/^(?:l(?:a|e)(?:y|i)lo|ле(?:и|й)ло),.+/i.test(rawText)) &&
+			!rawText.startsWith("//");
 
 		if (shouldReply) {
 			const images: string[] = [];
