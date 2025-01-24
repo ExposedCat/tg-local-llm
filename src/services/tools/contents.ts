@@ -22,7 +22,10 @@ export async function callGetContentsTool(
 	url: string,
 	model: string,
 ) {
-	const content = await scrapePage(browser, url);
+	let content = `Requested URL "${url}" is invalid. Don't make up URLs, use one exactly from search results or user request.`;
+	try {
+		content = await scrapePage(browser, url);
+	} catch {}
 	const summaryResponse = await ollama.chat({
 		model,
 		messages: [
@@ -40,8 +43,9 @@ export async function callGetContentsTool(
 	const summary = summaryResponse.message.content;
 
 	const prefix = `Summary of the url "${url}" contents that Laylo (you) requested`;
-	const postfix =
-		"You can now use get_contents again for another relevant URL if this information is not enough. Otherwise, write a response to user referring to this summary as web search result and mention url of this page as a source. Keep the dialog language the same and translate everything to user language.";
+	const postfix = `If this URL from your search shows enough information, write a response to previously given user request and mention url of this page as a source.
+		Note that user will not see this summary, only your response.
+		Otherwise, you can use get_contents again for another relevant URL.`;
 
 	return `${prefix}: \`\`\`
 	${summary}

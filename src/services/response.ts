@@ -1,5 +1,5 @@
 import ollama from "ollama";
-import type { ChatResponse, Message, ToolCall } from "ollama";
+import type { ChatResponse, Message } from "ollama";
 
 import type { Browser } from "puppeteer";
 import type { ThreadMessage } from "../types/database.js";
@@ -10,6 +10,7 @@ import {
 	TAG_HALLUCINATION_REGEX,
 	TAG_SPECIAL_SEQUENCE,
 } from "./prompt.js";
+import { brainTool, callBrainTool } from "./tools/brain.js";
 import { callGetContentsTool, getContentsTool } from "./tools/contents.js";
 import { callWebSearchTool, searchTool } from "./tools/search.js";
 
@@ -44,14 +45,26 @@ export type RespondArgs = {
 	senderName: string;
 };
 
+const TOOL_USE_LIMIT = 5;
+const TOOLS = [searchTool, getContentsTool, brainTool];
+
 async function processResponse(
 	response: ChatResponse,
 	browser: Browser,
 	history: (ThreadMessage | Message)[],
+	_usage = 0,
 ) {
 	const toolResponses = [];
 
+	const usage = _usage + 1;
+	if (usage > TOOL_USE_LIMIT) {
+		toolResponses.push(
+			"At this point write the final response for the user not using any more tools.",
+		);
+	}
+
 	for (const toolCall of response.message.tool_calls ?? []) {
+		console.log(`Tool call: ${toolCall.function.name}`);
 		if (toolCall.function.name === "search_web") {
 			const response = await callWebSearchTool(
 				toolCall.function.arguments.query ?? "<empty>",
@@ -64,10 +77,19 @@ async function processResponse(
 				MODEL,
 			);
 			toolResponses.push(response);
+		} else if (toolCall.function.name === "use_brain") {
+			const response = await callBrainTool(
+				toolCall.function.arguments.query,
+				MODEL,
+			);
+			toolResponses.push(response);
+		} else {
+			toolResponses.push("Requested tool is not available");
 		}
 	}
 
 	if (toolResponses.length !== 0) {
+		// const userMessage = history.pop() as Message | ThreadMessage;
 		history.push(
 			...toolResponses.map(
 				(response) =>
@@ -76,19 +98,20 @@ async function processResponse(
 						content: response,
 					}) as Message,
 			),
+			// userMessage,
 		);
 		const actualResponse = await ollama.chat({
 			model: MODEL,
 			messages: history,
-			tools: [searchTool, getContentsTool],
+			tools: TOOLS,
 		});
 		if (actualResponse.message.content) {
 			return actualResponse.message.content;
 		}
-		return processResponse(actualResponse, browser, history);
+		return processResponse(actualResponse, browser, history, usage);
 	}
 
-	return response.message.content;
+	return response.message.content ?? "⁠";
 }
 
 export async function respond({
@@ -108,7 +131,7 @@ export async function respond({
 	const answer = await ollama.chat({
 		model: MODEL,
 		messages: newHistory,
-		tools: [searchTool, getContentsTool],
+		tools: TOOLS,
 	});
 
 	let content = await processResponse(answer, browser, newHistory);

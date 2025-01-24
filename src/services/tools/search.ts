@@ -57,7 +57,7 @@ export async function callWebSearchTool(query: string) {
 		.map((entry) => `\n- URL "${entry.url}": \`${entry.content}\``)
 		.join("");
 
-	const prefix = `Web search results for "${query}"`;
+	const prefix = `Web search results for "${query}" that Laylo (you) requested`;
 	const postfix =
 		"Now use get_contents tool to extract contents of the most relevant URL here. Ensure you use proper URLs exactly as in search results";
 
