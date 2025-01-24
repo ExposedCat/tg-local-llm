@@ -82,28 +82,71 @@ messageController
 			}
 
 			await ctx.replyWithChatAction("typing");
+
+			let actionText = "";
+			let actionMessageId: number | null = null;
+			const onAction = async (action: string) => {
+				const label =
+					{
+						search_web: "Searching web...",
+						get_contents: "Reading web page...",
+						use_brain: "Thinking...",
+					}[action] ?? action;
+				actionText += `\n${label}`;
+
+				if (!actionMessageId) {
+					const message = await ctx.reply(actionText);
+					actionMessageId = message.message_id;
+				} else {
+					await ctx.api.editMessageText(
+						ctx.chat.id,
+						actionMessageId,
+						actionText,
+					);
+				}
+			};
+
 			const { response, userMessage } = await respond({
 				browser: ctx.browser,
 				history: thread?.messages ?? previousMessages,
 				message: text,
 				senderName,
 				images,
+				onAction,
 			});
+
+			if (actionMessageId) {
+				try {
+					await ctx.api.deleteMessage(ctx.chat.id, actionMessageId);
+				} catch {}
+			}
+
+			const responseActions = actionText
+				? `**${actionText
+						.replaceAll(".", "\\.")
+						.split("\n")
+						.map((line) => `>${line}`)
+						.join("\n")}||\n\n`
+				: "";
 
 			const safeRespond = async (formatting = true) => {
 				try {
-					return await ctx.reply(response, {
-						reply_parameters: {
-							message_id: messageId,
-							allow_sending_without_reply: true,
+					return await ctx.reply(
+						`${formatting ? responseActions : ""}${response}`,
+						{
+							reply_parameters: {
+								message_id: messageId,
+								allow_sending_without_reply: true,
+							},
+							parse_mode: formatting ? "MarkdownV2" : undefined,
+							message_thread_id: ctx.message.is_topic_message
+								? threadId
+								: undefined,
 						},
-						parse_mode: formatting ? "Markdown" : undefined,
-						message_thread_id: ctx.message.is_topic_message
-							? threadId
-							: undefined,
-					});
+					);
 				} catch (error) {
 					if (formatting) {
+						console.error("Failed to respond with formatting:", error);
 						return safeRespond(false);
 					}
 					console.error("Failed to respond:", error);

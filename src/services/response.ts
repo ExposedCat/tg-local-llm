@@ -43,6 +43,7 @@ export type RespondArgs = {
 	images: string[];
 	browser: Browser;
 	senderName: string;
+	onAction?: (action: string) => void | Promise<void>;
 };
 
 const TOOL_USE_LIMIT = 5;
@@ -52,6 +53,7 @@ async function processResponse(
 	response: ChatResponse,
 	browser: Browser,
 	history: (ThreadMessage | Message)[],
+	onAction: RespondArgs["onAction"],
 	_usage = 0,
 ) {
 	const toolResponses = [];
@@ -64,7 +66,7 @@ async function processResponse(
 	}
 
 	for (const toolCall of response.message.tool_calls ?? []) {
-		console.log(`Tool call: ${toolCall.function.name}`);
+		await onAction?.(toolCall.function.name);
 		if (toolCall.function.name === "search_web") {
 			const response = await callWebSearchTool(
 				toolCall.function.arguments.query ?? "<empty>",
@@ -108,11 +110,13 @@ async function processResponse(
 		if (actualResponse.message.content) {
 			return actualResponse.message.content;
 		}
-		return processResponse(actualResponse, browser, history, usage);
+		return processResponse(actualResponse, browser, history, onAction, usage);
 	}
 
 	return response.message.content ?? "⁠";
 }
+
+const MARKDOWN_RESERVED = /(_|\[|\]|\(|\)|~|>|#|\+|-|=|\||\{|\}|\.|!)/gm;
 
 export async function respond({
 	history,
@@ -120,6 +124,7 @@ export async function respond({
 	senderName,
 	browser,
 	images,
+	onAction,
 }: RespondArgs) {
 	const userMessage = buildUserMessage({ message, senderName, images });
 	const newHistory: (ThreadMessage | Message)[] = [
@@ -134,7 +139,7 @@ export async function respond({
 		tools: TOOLS,
 	});
 
-	let content = await processResponse(answer, browser, newHistory);
+	let content = await processResponse(answer, browser, newHistory, onAction);
 
 	if (!content.includes(MESSAGE_TAG)) {
 		content = `${MESSAGE_TAG}\n${content}`;
@@ -146,6 +151,7 @@ export async function respond({
 		.replaceAll("*", "-")
 		.replaceAll(/--(.+?)--/gm, "*$1*")
 		.replaceAll(/(\s|^)-([^- ].+?[^- ])-(\s|$)/gm, "$1\\*_$2_\\*$3")
+		.replaceAll(MARKDOWN_RESERVED, "\\$1")
 		.trim();
 
 	return { response, userMessage };
