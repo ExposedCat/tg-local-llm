@@ -17,7 +17,11 @@ messageController
 		const senderId = ctx.from.id;
 		const senderName = ctx.from.first_name;
 
-		const text = (ctx.message.text ?? ctx.message.caption)
+		const rawText = ctx.message.text ?? ctx.message.caption;
+		const replyQuote = ctx.message.quote?.text
+			? `> Quote: \`${ctx.message.quote?.text}\`\n`
+			: "";
+		const text = `${replyQuote}${rawText}`
 			.replaceAll(
 				new RegExp(
 					`${TAG_SPECIAL_SEQUENCE_ESCAPED}.+?${TAG_SPECIAL_SEQUENCE_ESCAPED}`,
@@ -61,7 +65,7 @@ messageController
 		const shouldReply =
 			thread ||
 			(replyTo && replyTo === ctx.me.id) ||
-			/^(?:l(?:a|e)(?:y|i)lo|ле(?:и|й)ло),.+/i.test(text);
+			/^(?:l(?:a|e)(?:y|i)lo|ле(?:и|й)ло),.+/i.test(rawText);
 
 		if (shouldReply) {
 			const images: string[] = [];
