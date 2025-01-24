@@ -4,8 +4,12 @@ Your digital friend in Telegram messenger, powered up by tools and Artificial In
 ## Features
 - Ask anything in group chats starting with `Laylo, ...`
 - Supports long dialogs via replies
+- Supports quote replies
+- Ignores messages starting with `//` for hidden replies
+- Supports TL;DR, analysis, etc. requests
 - Works with images (depends on LLM capabilities. Currently used Qwen2.5 doesn't support images)
-- Can use local web search if you ask for it
+- Can use local Web Search if you ask for it
+- Can use Brain Module (thinking process) if you ask for it
 - Minimal censorship
 - Realistic character
 
