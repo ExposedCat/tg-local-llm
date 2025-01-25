@@ -49,7 +49,7 @@ export function markdownToHtml(markdown: string) {
 		.replaceAll(/^(\s*)-(?!-)/gm, "$1·")
 		.replaceAll(/\[(.+?)\]\(((?:.|\n)+?)\)/g, '<a href="$2">$1</a>')
 		.replaceAll(
-			/^```(.+?)\n((?:.|\n)+?)\n```/gm,
+			/^```(.+?)?\n((?:.|\n)+?)\n```/gm,
 			'<pre><code language="$1">$2</code></pre>',
 		)
 		.replaceAll(/`((?:\n|.)+?)`/g, "<code>$1</code>")
