@@ -46,8 +46,8 @@ export function markdownToHtml(markdown: string) {
 		.replaceAll("&", "&amp;")
 		.replaceAll("<", "&lt;")
 		.replaceAll(">", "&gt;")
-		.replaceAll(/^(\s*)-/gm, "$1·")
-		.replaceAll(/\[(.+?)\]\(((?:.|\n)+?)\)/g, '<a href="$1">$2</a>')
+		.replaceAll(/^(\s*)-(?!-)/gm, "$1·")
+		.replaceAll(/\[(.+?)\]\(((?:.|\n)+?)\)/g, '<a href="$2">$1</a>')
 		.replaceAll(
 			/^```(.+?)\n((?:.|\n)+?)\n```/gm,
 			'<pre><code language="$1">$2</code></pre>',
