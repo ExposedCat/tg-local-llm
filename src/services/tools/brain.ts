@@ -2,6 +2,8 @@ import ollama from "ollama";
 
 import type { Tool } from "ollama";
 
+export const CALL_BRAIN_PREFIX = "[Your Brain]";
+
 export async function callBrainTool(query: string, model: string) {
 	const thoughtsResponse = await ollama.chat({
 		model,
@@ -31,9 +33,9 @@ Your thoughts should be clear, insightful, and valuable, adding layers of unders
 	});
 	const thoughts = thoughtsResponse.message.content;
 
-	const prefix = `Thoughts of Laylo's Brain about "${query}"`;
+	const prefix = `${CALL_BRAIN_PREFIX} Thoughts of Laylo's Brain about "${query}"`;
 	const postfix =
-		"Now answer user request based on your Brain thoughts. Don't cite it, just respond.";
+		"Now answer to the chat based on your Brain thoughts. Don't cite it, just respond.";
 
 	return `${prefix}: \`\`\`
 	${thoughts}

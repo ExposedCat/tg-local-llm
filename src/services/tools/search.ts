@@ -1,6 +1,6 @@
 import type { Tool } from "ollama";
 
-const SEARCH_ENDPOINT = "http://127.0.0.1:8080/search?format=json";
+const SEARCH_ENDPOINT = "http://127.0.0.1:8088/search?format=json";
 
 type SearchEntry = {
 	url: string;
@@ -26,6 +26,8 @@ type SearchWebResponse =
 			error: string;
 			result: null;
 	  };
+
+export const SEARCH_WEB_PREFIX = "[Your Web Browser: URL Suggestions]";
 
 async function searchWeb(query: string): Promise<SearchWebResponse> {
 	const uri = `${SEARCH_ENDPOINT}&q=${encodeURIComponent(query)}`;
@@ -57,9 +59,9 @@ export async function callWebSearchTool(query: string) {
 		.map((entry) => `\n- URL "${entry.url}": \`${entry.content}\``)
 		.join("");
 
-	const prefix = `Web search results for "${query}" that Laylo (you) requested`;
+	const prefix = `${SEARCH_WEB_PREFIX} Based on chat history, select the most relevant URL from this list based on descriptions. Select only URLs which describe information you need to respond to the last user message`;
 	const postfix =
-		"Now use get_contents tool to extract contents of the most relevant URL here. Ensure you use proper URLs exactly as in search results";
+		"Use get_contents to read the most relevant URL. Note that this URL list is supplied by your internal Web Browser, not user, so don't ask user which URL to use, pick one yourself.";
 
 	return `${prefix}: \`\`\`
 	${resultList}
@@ -72,7 +74,7 @@ export const searchTool: Tool = {
 	function: {
 		name: "search_web",
 		description:
-			"Search the web and get the content of the relevant pages. Search for unknown knowledge, news, info, public contact info, weather, etc.",
+			"Search the Internet for unknown knowledge, news, info, public contact info, weather, realtime data, etc.",
 		parameters: {
 			type: "object",
 			properties: {

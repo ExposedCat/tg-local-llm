@@ -1,11 +1,12 @@
 import { Composer } from "grammy";
+import { answerChatMessage } from "../services/chat.js";
 import { downloadFile } from "../services/download.js";
+import { escapeInputMessage, markdownToHtml } from "../services/formatting.js";
 import {
-	METADATA_FIELDS_REGEX,
-	TAG_SPECIAL_SEQUENCE,
-	TAG_SPECIAL_SEQUENCE_ESCAPED,
-} from "../services/prompt.js";
-import { buildUserMessage, respond } from "../services/response.js";
+	buildAssistantMessage,
+	buildUserMessage,
+	threaded,
+} from "../services/message.js";
 import { createThread, getThread, updateThread } from "../services/thread.js";
 import type { DefaultContext } from "../types/context.js";
 import type { ThreadMessage } from "../types/database.js";
@@ -19,18 +20,9 @@ messageController
 
 		const rawText = ctx.message.text ?? ctx.message.caption;
 		const replyQuote = ctx.message.quote?.text
-			? `> Quote: \`${ctx.message.quote?.text}\`\n`
+			? `> In reply to: \`${escapeInputMessage(ctx.message.quote.text)}\`\n`
 			: "";
-		const text = `${replyQuote}${rawText}`
-			.replaceAll(
-				new RegExp(
-					`${TAG_SPECIAL_SEQUENCE_ESCAPED}.+?${TAG_SPECIAL_SEQUENCE_ESCAPED}`,
-					"gi",
-				),
-				"",
-			)
-			.replaceAll(TAG_SPECIAL_SEQUENCE, "")
-			.replaceAll(METADATA_FIELDS_REGEX, "");
+		const senderMessageText = `${replyQuote}${escapeInputMessage(rawText)}`;
 
 		const chatId = ctx.chat.id;
 		const messageId = ctx.message.message_id;
@@ -47,20 +39,6 @@ messageController
 			ctx.message.reply_to_message?.text ??
 			ctx.message.reply_to_message?.caption ??
 			"<unsupported message>";
-
-		const previousMessages =
-			thread || !replyTo
-				? []
-				: [
-						{
-							...buildUserMessage({
-								message: replyText,
-								senderName: replyToUserName,
-								images: [], // TODO:
-							}),
-							fromId: replyTo,
-						} as ThreadMessage,
-					];
 
 		const shouldReply =
 			(thread ||
@@ -81,17 +59,38 @@ messageController
 				}
 			}
 
+			const inputMessages =
+				thread || !replyTo
+					? []
+					: [
+							threaded(
+								buildUserMessage({
+									message: replyText,
+									senderName: replyToUserName,
+									images: [], // TODO:
+								}),
+								replyTo,
+							),
+						];
+
+			const userMessage = threaded(
+				buildUserMessage({ message: senderMessageText, senderName, images }),
+				senderId,
+			);
+			inputMessages.push(userMessage);
+
 			await ctx.replyWithChatAction("typing");
 
 			let actionText = "";
 			let actionMessageId: number | null = null;
-			const onAction = async (action: string) => {
-				const label =
-					{
-						search_web: "Searching web...",
-						get_contents: "Reading web page...",
-						use_brain: "Thinking...",
-					}[action] ?? action;
+			const onAction = async (action: string, arg?: string) => {
+				const actionLabels: Record<string, (() => string) | undefined> = {
+					search_web: () => `Searching "${arg}"...`,
+					get_contents: () =>
+						`Reading <a href="${arg}">${arg ? new URL(arg).host : "web page"}</a>...`,
+					use_brain: () => `Thinking about "${arg}"...`,
+				};
+				const label = actionLabels[action]?.() ?? action;
 				actionText += `\n${label}`;
 
 				if (!actionMessageId) {
@@ -101,17 +100,14 @@ messageController
 					await ctx.api.editMessageText(
 						ctx.chat.id,
 						actionMessageId,
-						actionText,
+						actionText.trim(),
 					);
 				}
 			};
 
-			const { response, userMessage } = await respond({
+			const response = await answerChatMessage({
 				browser: ctx.browser,
-				history: thread?.messages ?? previousMessages,
-				message: text,
-				senderName,
-				images,
+				history: [...(thread?.messages ?? []), ...inputMessages],
 				onAction,
 			});
 
@@ -122,31 +118,26 @@ messageController
 			}
 
 			const responseActions = actionText
-				? `**${actionText
-						.replaceAll(".", "\\.")
-						.split("\n")
-						.map((line) => `>${line}`)
-						.join("\n")}||\n\n`
+				? `<blockquote expandable>${actionText.trim()}</blockquote>`
 				: "";
 
 			const safeRespond = async (formatting = true) => {
 				try {
-					return await ctx.reply(
-						`${formatting ? responseActions : ""}${response}`,
-						{
-							reply_parameters: {
-								message_id: messageId,
-								allow_sending_without_reply: true,
-							},
-							parse_mode: formatting ? "MarkdownV2" : undefined,
-							message_thread_id: ctx.message.is_topic_message
-								? threadId
-								: undefined,
-						},
-					);
+					const actionPrefix = formatting
+						? responseActions
+						: `${actionText}\n\n`;
+					const content = formatting ? markdownToHtml(response) : response;
+
+					return await ctx.reply(`${actionPrefix}${content}` || "⁠", {
+						reply_parameters: { message_id: messageId },
+						parse_mode: formatting ? "HTML" : undefined,
+						message_thread_id: ctx.message.is_topic_message
+							? threadId
+							: undefined,
+					});
 				} catch (error) {
 					if (formatting) {
-						console.error("Failed to respond with formatting:", error);
+						console.warn("Failed to respond with formatting:", error);
 						return safeRespond(false);
 					}
 					console.error("Failed to respond:", error);
@@ -160,15 +151,10 @@ messageController
 			}
 
 			const newMessages: ThreadMessage[] = [
-				...previousMessages,
-				{
-					role: "user",
-					fromId: senderId,
-					content: userMessage.content,
-					images: userMessage.images as string[],
-				},
-				{ role: "assistant", fromId: -1, content: response },
+				...inputMessages,
+				threaded(buildAssistantMessage(response)),
 			];
+
 			if (responseMessage.message_thread_id) {
 				if (!thread) {
 					thread = await createThread({

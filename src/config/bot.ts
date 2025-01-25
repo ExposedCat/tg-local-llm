@@ -13,6 +13,38 @@ import type { Bot } from "../types/telegram.js";
 import { initLocaleEngine } from "./locale-engine.js";
 
 function extendContext(bot: Bot, database: Database, browser: Browser) {
+	bot.api.config.use((prev, method, payload, signal) => {
+		if (
+			!payload ||
+			(!method.startsWith("edit") && !method.startsWith("send")) ||
+			method === "sendChatAction"
+		) {
+			return prev(method, payload, signal);
+		}
+		return prev(
+			method,
+			{
+				...payload,
+				parse_mode: "parse_mode" in payload ? payload.parse_mode : "HTML",
+				reply_parameters:
+					"reply_parameters" in payload
+						? {
+								allow_sending_without_reply: true,
+								quote_parse_mode: "HTML",
+								...payload.reply_parameters,
+							}
+						: undefined,
+				link_preview_options: {
+					is_disabled: true,
+					...("link_preview_options" in payload
+						? payload.link_preview_options
+						: {}),
+				},
+			},
+			signal,
+		);
+	});
+
 	bot.use(async (ctx, next) => {
 		ctx.text = createReplyWithTextFunc(ctx);
 		ctx.db = database;

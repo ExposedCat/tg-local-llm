@@ -1,7 +1,7 @@
 import type { Collection } from "mongodb";
 
 export type ThreadMessage = {
-	role: "user" | "assistant";
+	role: "user" | "assistant" | "system";
 	fromId: number | null;
 	content: string;
 	images?: string[];

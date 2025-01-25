@@ -17,6 +17,8 @@ async function scrapePage(browser: Browser, url: string) {
 	return text;
 }
 
+export const GET_CONTENTS_PREFIX = "[Your Web Browser: Page Contents]";
+
 export async function callGetContentsTool(
 	browser: Browser,
 	url: string,
@@ -32,7 +34,7 @@ export async function callGetContentsTool(
 			{
 				role: "system",
 				content:
-					"Given raw website contents, write a structured summary without missing anything important. Ignore metadata irrelevant to the page topic.",
+					"Given raw website contents, write a concise and structured summary without missing anything important. Ignore metadata irrelevant to the page topic.",
 			},
 			{
 				role: "user",
@@ -42,10 +44,9 @@ export async function callGetContentsTool(
 	});
 	const summary = summaryResponse.message.content;
 
-	const prefix = `Summary of the url "${url}" contents that Laylo (you) requested`;
-	const postfix = `If this URL from your search shows enough information, write a response to previously given user request and mention url of this page as a source.
-		Note that user will not see this summary, only your response.
-		Otherwise, you can use get_contents again for another relevant URL.`;
+	const prefix = `${GET_CONTENTS_PREFIX} You search internet and information on the website "${url}":`;
+	const postfix =
+		"Use this extra knowledge from your web search to answer to the last user message in the chat";
 
 	return `${prefix}: \`\`\`
 	${summary}
@@ -64,7 +65,7 @@ export const getContentsTool: Tool = {
 			properties: {
 				url: {
 					type: "string",
-					description: "URL of the page to extract contents from",
+					description: "URL of the page to get contents from",
 				},
 			},
 			required: ["url"],
