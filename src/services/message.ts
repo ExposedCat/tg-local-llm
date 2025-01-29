@@ -1,6 +1,11 @@
-import type { Message } from "ollama";
+import type { Message, Tool } from "ollama";
 import type { ThreadMessage } from "../types/database.js";
-import { MESSAGE_TAG, METADATA_TAG, TAG_SPECIAL_SEQUENCE } from "./prompt.js";
+import {
+	MESSAGE_TAG,
+	METADATA_TAG,
+	TAG_SPECIAL_SEQUENCE,
+	makeSystemPrompt,
+} from "./prompt.js";
 
 export type BuildUserMessageArgs = {
 	message: string;
@@ -36,3 +41,8 @@ export const threaded = (message: Message, fromId?: number) =>
 		...message,
 		fromId: fromId ?? -1,
 	}) as ThreadMessage;
+
+export const buildHistory = (messages: Message[], tools: Tool[]): Message[] => [
+	{ role: "system", content: makeSystemPrompt(tools) },
+	...messages,
+];

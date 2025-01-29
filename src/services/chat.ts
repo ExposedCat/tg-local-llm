@@ -3,14 +3,13 @@ import type { ChatResponse, Message, Tool } from "ollama";
 
 import type { Browser } from "puppeteer";
 import type { ThreadMessage } from "../types/database.js";
-import { markdownToHtml } from "./formatting.js";
+import { buildHistory } from "./message.js";
 import {
 	MESSAGE_TAG,
-	METADATA_TAG,
-	SYSTEM_PROMPT,
 	TAG_HALLUCINATION_REGEX,
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
+	makeSystemPrompt,
 } from "./prompt.js";
 import { brainTool, callBrainTool } from "./tools/brain.js";
 import { callGetContentsTool, getContentsTool } from "./tools/contents.js";
@@ -20,7 +19,7 @@ import {
 	searchTool,
 } from "./tools/search.js";
 
-const MODEL = "qwen2.5:14b";
+const MODEL = "deepseek-r1:14b";
 
 export type RespondArgs = {
 	history: Message[];
@@ -50,29 +49,37 @@ async function processResponse(
 		toolResponses.push(TOOL_LIMIT_PROMPT);
 	}
 
-	const toolCall = response.message.tool_calls?.at(0);
+	let toolName: string | null = null;
+	const toolCallMatch = response.message.content
+		.replaceAll("\n", "")
+		.match(/\{"tool":"(.+?)","parameters":(.+?)\}/);
 
 	if (history.at(-1)?.content.startsWith(SEARCH_WEB_PREFIX)) {
 		history.pop();
 	}
 
-	if (toolCall?.function.name === "search_web") {
-		const arg = toolCall.function.arguments.query ?? "<empty>";
-		await onAction?.(toolCall.function.name, arg);
-		const response = await callWebSearchTool(arg);
-		toolResponses.push(response);
-	} else if (toolCall?.function.name === "get_contents") {
-		const arg = toolCall?.function.arguments.url;
-		await onAction?.(toolCall.function.name, arg);
-		const response = await callGetContentsTool(browser, arg, MODEL);
-		toolResponses.push(response);
-	} else if (toolCall?.function.name === "use_brain") {
-		const arg = toolCall.function.arguments.query;
-		await onAction?.(toolCall.function.name, arg);
-		const response = await callBrainTool(arg, MODEL);
-		toolResponses.push(response);
-	} else if (toolCall) {
-		toolResponses.push(TOOL_UNAVAILABLE_PROMPT);
+	if (toolCallMatch) {
+		const [_, name, rawParams] = toolCallMatch;
+		toolName = name;
+		const params = JSON.parse(rawParams);
+		if (name === "search_web") {
+			const arg = params.query ?? "<empty>";
+			await onAction?.(name, arg);
+			const response = await callWebSearchTool(arg);
+			toolResponses.push(response);
+		} else if (name === "get_contents") {
+			const arg = params.url;
+			await onAction?.(name, arg);
+			const response = await callGetContentsTool(browser, arg, MODEL);
+			toolResponses.push(response);
+		} else if (name === "use_brain") {
+			const arg = params.query;
+			await onAction?.(name, arg);
+			const response = await callBrainTool(arg, MODEL);
+			toolResponses.push(response);
+		} else {
+			toolResponses.push(TOOL_UNAVAILABLE_PROMPT);
+		}
 	}
 
 	if (toolResponses.length !== 0) {
@@ -87,8 +94,7 @@ async function processResponse(
 		);
 		const actualResponse = await ollama.chat({
 			model: MODEL,
-			messages: history,
-			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
+			messages: buildHistory(history, TOOL_MAP[toolName ?? ""] ?? TOOLS),
 		});
 		if (actualResponse.message.content) {
 			return actualResponse.message.content;
@@ -104,18 +110,12 @@ export async function answerChatMessage({
 	browser,
 	onAction,
 }: RespondArgs) {
-	const newHistory: Message[] = [
-		{ role: "system", content: SYSTEM_PROMPT },
-		...history,
-	];
-
 	const answer = await ollama.chat({
 		model: MODEL,
-		messages: newHistory,
-		tools: TOOLS,
+		messages: buildHistory(history, TOOLS),
 	});
 
-	let content = await processResponse(answer, browser, newHistory, onAction);
+	let content = await processResponse(answer, browser, history, onAction);
 
 	if (!content.includes(MESSAGE_TAG)) {
 		content = `${MESSAGE_TAG}\n${content}`;
