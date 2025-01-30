@@ -8,6 +8,7 @@ import { startController } from "../controllers/start.js";
 import { stopController } from "../controllers/stop.js";
 import { resolvePath } from "../helpers/resolve-path.js";
 import { createReplyWithTextFunc } from "../services/context.js";
+import { getOrCreateChatPreferences } from "../services/database.js";
 import type { DefaultContext } from "../types/context.js";
 import type { Database } from "../types/database.js";
 import type { Bot } from "../types/telegram.js";
@@ -49,7 +50,10 @@ function extendContext(bot: Bot, database: Database, browser: Browser) {
 	bot.use(async (ctx, next) => {
 		ctx.text = createReplyWithTextFunc(ctx);
 		ctx.db = database;
-		ctx.chatPreferences;
+		if (ctx.chat?.id) {
+			const chat = await getOrCreateChatPreferences(ctx.chat.id, database);
+			ctx.chatPreferences = chat?.preferences;
+		}
 		ctx.browser = browser;
 
 		await next();

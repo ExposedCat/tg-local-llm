@@ -88,7 +88,6 @@ messageController
 					search_web: () => `Searching "${arg}"...`,
 					get_contents: () =>
 						`Reading <a href="${arg}">${arg ? new URL(arg).host : "web page"}</a>...`,
-					use_brain: () => `Thinking about "${arg}"...`,
 				};
 				const label = actionLabels[action]?.() ?? action;
 				actionText += `\n${label}`;
@@ -105,10 +104,11 @@ messageController
 				}
 			};
 
-			const response = await answerChatMessage({
+			const { raw, message } = await answerChatMessage({
 				browser: ctx.browser,
 				history: [...(thread?.messages ?? []), ...inputMessages],
 				onAction,
+				preferences: ctx.chatPreferences,
 			});
 
 			if (actionMessageId) {
@@ -126,7 +126,7 @@ messageController
 					const actionPrefix = formatting
 						? responseActions
 						: `${actionText}\n\n`;
-					const content = formatting ? markdownToHtml(response) : response;
+					const content = formatting ? markdownToHtml(message) : message;
 
 					return await ctx.reply(`${actionPrefix}${content}` || "⁠", {
 						reply_parameters: { message_id: messageId },
@@ -152,7 +152,7 @@ messageController
 
 			const newMessages: ThreadMessage[] = [
 				...inputMessages,
-				threaded(buildAssistantMessage(response)),
+				threaded(buildAssistantMessage(raw)),
 			];
 
 			if (responseMessage.message_thread_id) {

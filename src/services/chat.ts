@@ -2,16 +2,17 @@ import ollama from "ollama";
 import type { ChatResponse, Message, Tool } from "ollama";
 
 import type { Browser } from "puppeteer";
-import type { ThreadMessage } from "../types/database.js";
+import type { Chat, ThreadMessage } from "../types/database.js";
+import { buildHistory } from "./message.js";
 import {
-	MESSAGE_TAG,
-	METADATA_TAG,
-	SYSTEM_PROMPT,
-	TAG_HALLUCINATION_REGEX,
+	MESSAGE_END,
+	MESSAGE_START,
+	THOUGHTS_END,
+	THOUGHTS_START,
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
+	makeSystemPrompt,
 } from "./prompt.js";
-import { brainTool, callBrainTool } from "./tools/brain.js";
 import { callGetContentsTool, getContentsTool } from "./tools/contents.js";
 import {
 	SEARCH_WEB_PREFIX,
@@ -24,15 +25,15 @@ const MODEL = "qwen2.5:14b";
 export type RespondArgs = {
 	history: Message[];
 	browser: Browser;
+	preferences: Chat["preferences"];
 	onAction?: (action: string, arg?: string) => void | Promise<void>;
 };
 
 const TOOL_USE_LIMIT = 5;
-const TOOLS = [searchTool, getContentsTool, brainTool];
+const TOOLS = [searchTool, getContentsTool];
 const TOOL_MAP: Record<string, Tool[]> = {
 	search_web: [getContentsTool],
 	get_contents: [],
-	use_brain: [searchTool, getContentsTool],
 };
 
 async function processResponse(
@@ -40,6 +41,7 @@ async function processResponse(
 	browser: Browser,
 	history: (ThreadMessage | Message)[],
 	onAction: RespondArgs["onAction"],
+	systemPrompt: string,
 	_usage = 0,
 ) {
 	const toolResponses = [];
@@ -65,11 +67,6 @@ async function processResponse(
 		await onAction?.(toolCall.function.name, arg);
 		const response = await callGetContentsTool(browser, arg, MODEL);
 		toolResponses.push(response);
-	} else if (toolCall?.function.name === "use_brain") {
-		const arg = toolCall.function.arguments.query;
-		await onAction?.(toolCall.function.name, arg);
-		const response = await callBrainTool(arg, MODEL);
-		toolResponses.push(response);
 	} else if (toolCall) {
 		toolResponses.push(TOOL_UNAVAILABLE_PROMPT);
 	}
@@ -86,13 +83,20 @@ async function processResponse(
 		);
 		const actualResponse = await ollama.chat({
 			model: MODEL,
-			messages: history,
+			messages: buildHistory(systemPrompt, history),
 			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
 		});
 		if (actualResponse.message.content) {
 			return actualResponse.message.content;
 		}
-		return processResponse(actualResponse, browser, history, onAction, usage);
+		return processResponse(
+			actualResponse,
+			browser,
+			history,
+			onAction,
+			systemPrompt,
+			usage,
+		);
 	}
 
 	return response.message.content ?? "";
@@ -101,28 +105,41 @@ async function processResponse(
 export async function answerChatMessage({
 	history,
 	browser,
+	preferences,
 	onAction,
 }: RespondArgs) {
-	const newHistory: Message[] = [
-		{ role: "system", content: SYSTEM_PROMPT },
-		...history,
-	];
-
+	const systemPrompt = makeSystemPrompt(preferences.nsfw);
 	const answer = await ollama.chat({
 		model: MODEL,
-		messages: newHistory,
+		messages: buildHistory(systemPrompt, history),
 		tools: TOOLS,
 	});
 
-	let content = await processResponse(answer, browser, newHistory, onAction);
+	let content = await processResponse(
+		answer,
+		browser,
+		history,
+		onAction,
+		systemPrompt,
+	);
 
-	if (!content.includes(MESSAGE_TAG)) {
-		content = `${MESSAGE_TAG}\n${content}`;
+	if (!content.includes(MESSAGE_START)) {
+		content = `${MESSAGE_START}\n${content}`;
 	}
-	const index = content.indexOf(MESSAGE_TAG) + MESSAGE_TAG.length + 1;
-	const response = content
-		.substring(index)
-		.replaceAll(TAG_HALLUCINATION_REGEX, "");
+	const message =
+		content.split(MESSAGE_START).at(1)?.split(MESSAGE_END).at(0)?.trim() ?? "";
+	const thoughts =
+		content.split(THOUGHTS_START).at(1)?.split(THOUGHTS_END).at(0)?.trim() ??
+		"";
 
-	return response;
+	return {
+		raw: `${THOUGHTS_START}
+		${thoughts}
+		${THOUGHTS_END}
+		${MESSAGE_START}
+		${message}
+		${MESSAGE_END}`,
+		thoughts,
+		message,
+	};
 }

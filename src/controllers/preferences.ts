@@ -7,7 +7,7 @@ preferencesController
 	.chatType(["group", "supergroup"])
 	.command("nsfw", async (ctx) => {
 		const chatId = ctx.chat.id;
-		const value = ["on", "yes", "true", "y"].includes(ctx.match[1]);
+		const value = ["on", "yes", "true", "y"].includes(ctx.match);
 		await setChatPreferences(chatId, ctx.db, {
 			nsfw: value,
 		});

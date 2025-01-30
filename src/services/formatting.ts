@@ -1,7 +1,8 @@
 import {
-	METADATA_FIELDS_REGEX,
-	TAG_SPECIAL_SEQUENCE,
-	TAG_SPECIAL_SEQUENCE_ESCAPED,
+	MESSAGE_END,
+	MESSAGE_START,
+	METADATA_END,
+	METADATA_START,
 } from "./prompt.js";
 
 function makeHeader(input: string) {
@@ -42,6 +43,12 @@ function makeHeader(input: string) {
 }
 
 export function markdownToHtml(markdown: string) {
+	const wrapper = (character: string) =>
+		new RegExp(
+			`(?<=\\s|^|[(])${character}(.+?)${character}(?=\\s|$|[.,!?:;)]+)`,
+			"g",
+		);
+
 	return markdown
 		.replaceAll("&", "&amp;")
 		.replaceAll("<", "&lt;")
@@ -52,11 +59,11 @@ export function markdownToHtml(markdown: string) {
 			/^```(.+?)?\n((?:.|\n)+?)\n```/gm,
 			'<pre><code language="$1">$2</code></pre>',
 		)
-		.replaceAll(/`((?:\n|.)+?)`/g, "<code>$1</code>")
-		.replaceAll(/\*\*((?:\n|.)+?)\*\*/g, "<b>$1</b>")
-		.replaceAll(/__((?:\n|.)+?)__/g, "<b>$1</b>")
-		.replaceAll(/\*((?:\n|.)+?)\*/g, "<i>$1</i>")
-		.replaceAll(/_((?:\n|.)+?)_/g, "<i>$1</i>")
+		.replaceAll(wrapper("`"), "<code>$1</code>")
+		.replaceAll(wrapper("\\*\\*"), "<b>$1</b>")
+		.replaceAll(wrapper("__"), "<b>$1</b>")
+		.replaceAll(wrapper("\\*"), "<i>$1</i>")
+		.replaceAll(wrapper("_"), "<i>$1</i>")
 		.replaceAll(/^#{3,}(.+?)$/gm, (_, match) => `<b>${match.trim()}</b>`)
 		.replaceAll(
 			/^##(.+?)$/gm,
@@ -71,12 +78,11 @@ export function markdownToHtml(markdown: string) {
 export function escapeInputMessage(message: string) {
 	return message
 		.replaceAll(
-			new RegExp(
-				`${TAG_SPECIAL_SEQUENCE_ESCAPED}.+?${TAG_SPECIAL_SEQUENCE_ESCAPED}`,
-				"gi",
-			),
+			new RegExp(`${MESSAGE_START}(?:.|\\n)+?${MESSAGE_END}`, "gi"),
 			"",
 		)
-		.replaceAll(TAG_SPECIAL_SEQUENCE, "")
-		.replaceAll(METADATA_FIELDS_REGEX, "");
+		.replaceAll(
+			new RegExp(`${METADATA_START}(?:.|\\n)+?${METADATA_END}`, "gi"),
+			"",
+		);
 }

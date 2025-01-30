@@ -4,7 +4,7 @@ export async function getOrCreateChatPreferences(
 	chatId: number,
 	database: Database,
 ) {
-	await database.chat.findOneAndUpdate(
+	const { value } = await database.chat.findOneAndUpdate(
 		{ chatId },
 		{
 			$setOnInsert: {
@@ -18,6 +18,8 @@ export async function getOrCreateChatPreferences(
 			returnDocument: "after",
 		},
 	);
+	// biome-ignore lint/style/noNonNullAssertion: upsert ensures value
+	return value!;
 }
 
 export async function setChatPreferences(

@@ -1,6 +1,11 @@
 import type { Message } from "ollama";
 import type { ThreadMessage } from "../types/database.js";
-import { MESSAGE_TAG, METADATA_TAG, TAG_SPECIAL_SEQUENCE } from "./prompt.js";
+import {
+	MESSAGE_END,
+	MESSAGE_START,
+	METADATA_END,
+	METADATA_START,
+} from "./prompt.js";
 
 export type BuildUserMessageArgs = {
 	message: string;
@@ -22,11 +27,11 @@ export function buildUserMessage({
 	images,
 }: BuildUserMessageArgs): Message {
 	const field = (name: string, content: string) =>
-		`\n${TAG_SPECIAL_SEQUENCE}${name}="${content}"${TAG_SPECIAL_SEQUENCE}`;
+		`\n<${name}>${content}</${name}>`;
 
 	return {
 		role: "user",
-		content: `${METADATA_TAG}${field("from", senderName)}${field("message_date", new Date().toLocaleString())}\n${MESSAGE_TAG}\n${message}`,
+		content: `${METADATA_START}${field("from", senderName)}${field("message_date", new Date().toLocaleString())}\n${METADATA_END}\n${MESSAGE_START}\n${message}\n${MESSAGE_END}`,
 		images,
 	};
 }
@@ -36,3 +41,8 @@ export const threaded = (message: Message, fromId?: number) =>
 		...message,
 		fromId: fromId ?? -1,
 	}) as ThreadMessage;
+
+export const buildHistory = (
+	systemPrompt: string,
+	messages: Message[],
+): Message[] => [{ role: "system", content: systemPrompt }, ...messages];
