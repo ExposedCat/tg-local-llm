@@ -3,6 +3,7 @@ import { Bot as TelegramBot, session } from "grammy";
 
 import type { Browser } from "puppeteer";
 import { messageController } from "../controllers/message.js";
+import { preferencesController } from "../controllers/preferences.js";
 import { startController } from "../controllers/start.js";
 import { stopController } from "../controllers/stop.js";
 import { resolvePath } from "../helpers/resolve-path.js";
@@ -48,6 +49,7 @@ function extendContext(bot: Bot, database: Database, browser: Browser) {
 	bot.use(async (ctx, next) => {
 		ctx.text = createReplyWithTextFunc(ctx);
 		ctx.db = database;
+		ctx.chatPreferences;
 		ctx.browser = browser;
 
 		await next();
@@ -64,6 +66,8 @@ function setupMiddlewares(bot: Bot, localeEngine: I18n) {
 function setupControllers(bot: Bot) {
 	bot.use(startController);
 	bot.use(stopController);
+
+	bot.use(preferencesController);
 
 	bot.use(messageController);
 }

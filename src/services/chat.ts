@@ -3,7 +3,6 @@ import type { ChatResponse, Message, Tool } from "ollama";
 
 import type { Browser } from "puppeteer";
 import type { ThreadMessage } from "../types/database.js";
-import { markdownToHtml } from "./formatting.js";
 import {
 	MESSAGE_TAG,
 	METADATA_TAG,

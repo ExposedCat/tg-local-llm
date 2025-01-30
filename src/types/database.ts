@@ -13,6 +13,14 @@ export type Thread = {
 	messages: ThreadMessage[];
 };
 
+export type Chat = {
+	chatId: number;
+	preferences: {
+		nsfw: boolean;
+	};
+};
+
 export type Database = {
 	thread: Collection<Thread>;
+	chat: Collection<Chat>;
 };
