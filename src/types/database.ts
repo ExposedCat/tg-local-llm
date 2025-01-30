@@ -17,6 +17,7 @@ export type Chat = {
 	chatId: number;
 	preferences: {
 		nsfw: boolean;
+		extremeState?: string;
 	};
 };
 

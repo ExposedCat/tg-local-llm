@@ -108,7 +108,10 @@ export async function answerChatMessage({
 	preferences,
 	onAction,
 }: RespondArgs) {
-	const systemPrompt = makeSystemPrompt(preferences.nsfw);
+	const systemPrompt = makeSystemPrompt(
+		preferences.nsfw,
+		preferences.extremeState,
+	);
 	const answer = await ollama.chat({
 		model: MODEL,
 		messages: buildHistory(systemPrompt, history),
