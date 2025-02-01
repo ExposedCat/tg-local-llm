@@ -109,7 +109,7 @@ messageController
 				}
 			};
 
-			const { raw, message, images, tokens } = await answerChatMessage({
+			const { raw, message, images } = await answerChatMessage({
 				browser: ctx.browser,
 				history: [...(thread?.messages ?? []), ...inputMessages],
 				onAction,
@@ -133,23 +133,20 @@ messageController
 						: `${actionText}\n\n`;
 					const content = formatting ? markdownToHtml(message) : message;
 
-					return await ctx.reply(
-						`${actionPrefix}${content}\n\nTokens used: ${tokens}` || "⁠",
-						{
-							reply_parameters: { message_id: messageId },
-							parse_mode: formatting ? "HTML" : undefined,
-							message_thread_id: ctx.message.is_topic_message
-								? threadId
-								: undefined,
-							link_preview_options: images.at(0)
-								? {
-										is_disabled: false,
-										prefer_large_media: true,
-										url: images[0],
-									}
-								: undefined,
-						},
-					);
+					return await ctx.reply(`${actionPrefix}${content}` || "⁠", {
+						reply_parameters: { message_id: messageId },
+						parse_mode: formatting ? "HTML" : undefined,
+						message_thread_id: ctx.message.is_topic_message
+							? threadId
+							: undefined,
+						link_preview_options: images.at(0)
+							? {
+									is_disabled: false,
+									prefer_large_media: true,
+									url: images[0],
+								}
+							: undefined,
+					});
 				} catch (error) {
 					if (formatting) {
 						console.warn("Failed to respond with formatting:", error);

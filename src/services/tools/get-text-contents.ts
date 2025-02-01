@@ -1,22 +1,16 @@
-import ollama from "ollama";
-
 import type { Tool } from "ollama";
 import type { Browser } from "puppeteer";
 import { scrapePage } from "../browser.js";
+import { generate } from "../ollama.js";
 
 export const GET_CONTENTS_PREFIX = "[Your Web Browser: Page Text Contents]";
 
-export async function callGetContentsTool(
-	browser: Browser,
-	url: string,
-	model: string,
-) {
+export async function callGetContentsTool(browser: Browser, url: string) {
 	let content = `Requested URL "${url}" is invalid. Don't make up URLs, use one exactly from search results or user request.`;
 	try {
 		content = await scrapePage(browser, url);
 	} catch {}
-	const summaryResponse = await ollama.chat({
-		model,
+	const summaryResponse = await generate({
 		messages: [
 			{
 				role: "system",

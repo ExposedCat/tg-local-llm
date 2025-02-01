@@ -1,10 +1,10 @@
 import ollama from "ollama";
 import type { ChatResponse, Message, Tool } from "ollama";
 
-import { resolve } from "@grammyjs/i18n/script/src/deps.js";
 import type { Browser } from "puppeteer";
 import type { Chat, ThreadMessage } from "../types/database.js";
 import { buildHistory } from "./message.js";
+import { generate } from "./ollama.js";
 import {
 	IMAGES_END,
 	IMAGES_START,
@@ -25,8 +25,6 @@ import {
 	callWebSearchTool,
 	searchTool,
 } from "./tools/web-search.js";
-
-const MODEL = "qwen2.5:14b";
 
 export type RespondArgs = {
 	history: Message[];
@@ -74,7 +72,7 @@ async function processResponse(
 	} else if (toolCall?.function.name === "get_text_contents") {
 		const arg = toolCall?.function.arguments.url;
 		await onAction?.(toolCall.function.name, arg);
-		const response = await callGetContentsTool(browser, arg, MODEL);
+		const response = await callGetContentsTool(browser, arg);
 		toolResponses.push(response);
 	} else if (toolCall) {
 		toolResponses.push(TOOL_UNAVAILABLE_PROMPT);
@@ -90,8 +88,7 @@ async function processResponse(
 					}) as Message,
 			),
 		);
-		const actualResponse = await ollama.chat({
-			model: MODEL,
+		const actualResponse = await generate({
 			messages: buildHistory(systemPrompt, history),
 			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
 		});
@@ -124,8 +121,7 @@ export async function answerChatMessage({
 		preferences.nsfw,
 		preferences.extremeState,
 	);
-	const answer = await ollama.chat({
-		model: MODEL,
+	const answer = await generate({
 		messages: buildHistory(systemPrompt, history),
 		tools: TOOLS,
 	});
