@@ -2,22 +2,9 @@ import ollama from "ollama";
 
 import type { Tool } from "ollama";
 import type { Browser } from "puppeteer";
+import { scrapePage } from "../browser.js";
 
-async function scrapePage(browser: Browser, url: string) {
-	const page = await browser.newPage();
-	await page.setUserAgent(
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
-	);
-	await page.setExtraHTTPHeaders({
-		DNT: "1",
-		"Accept-Language": "en-US,en;q=0.9",
-	});
-	await page.goto(url, { waitUntil: "domcontentloaded" });
-	const text = await page.evaluate(() => document.body.innerText);
-	return text;
-}
-
-export const GET_CONTENTS_PREFIX = "[Your Web Browser: Page Contents]";
+export const GET_CONTENTS_PREFIX = "[Your Web Browser: Page Text Contents]";
 
 export async function callGetContentsTool(
 	browser: Browser,
@@ -46,7 +33,7 @@ export async function callGetContentsTool(
 
 	const prefix = `${GET_CONTENTS_PREFIX} You search internet and information on the website "${url}":`;
 	const postfix =
-		"Use this extra knowledge from your web search to answer to the last user message in the chat";
+		"Use this extra knowledge from your web search to answer to the last user message in the chat. Respond with actual answer, don't say \"let's search\" or anything like that";
 
 	return `${prefix}: \`\`\`
 	${summary}
@@ -57,15 +44,15 @@ export async function callGetContentsTool(
 export const getContentsTool: Tool = {
 	type: "function",
 	function: {
-		name: "get_contents",
+		name: "get_text_contents",
 		description:
-			"Extract contents of the web page by its URL. Always use this after using web_search or when user explicitly asked you to",
+			"Extract text contents of the web page by its URL. Use this to read a web page (either from user or search results). Don't use this for image search!",
 		parameters: {
 			type: "object",
 			properties: {
 				url: {
 					type: "string",
-					description: "URL of the page to get contents from",
+					description: "URL of the page to get text contents from",
 				},
 			},
 			required: ["url"],

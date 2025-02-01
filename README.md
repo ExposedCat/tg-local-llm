@@ -11,17 +11,22 @@ The project was initiated out of enthusiasm to develop a single, fully local AI 
 - Ignores messages starting with `//` for hidden replies
 - Supports TL;DR, analysis, etc. requests by replies
 - Works with images (depends on LLM capabilities. Currently used Qwen2.5 doesn't support images)
-- Can use Web Search if you ask for it
+- Can use Web Search (text and image) if you ask for it
 - Can use Brain Module (thinking process) if you ask for it
 - Minimal censorship
 - Human-like character
 
 ## Under the hood
-- System prompt is enough to define Social Rule Book (to introduce social boundary bias and reduce censorship), and general behavior to make model responses more human-like and realistic
-- Long multi-user conversations handling, including sender names and message date: we define message metadata structure in a system prompt which is stripped off before sending message to users. Metadata contains some basic fields, each is described within the system prompt; Model is guided to not to write own metadata and ignore unallowed metadata fields from users. Just in case, metadata is cleaned up from raw user messages and AI responses
-- Formatting: LLMs tend to use Markdown that doesn't perfectly align with Telegram requirements, so I define guidelines in Markdown to align it better. Then, each formatting feature such as bold text or code blocks is replaced by Regex with its HTML counter-part. This ensures that model can't accidentially crash message sending via formatting. Note that I save and feed message history to the model with original Markdown formatting so that it doesn't get confused and generates consistent text. Just in case whenever it fails to send a message I retry it with Telegram formatting disabled, in which case I use raw Markdown response because of it's more human-friendly nature. This works very well and is bullet-proof
-- Background Thinking: I defined a simple `Use Brain` tool. Query supplied by history-aware model is sent to a separate LLM call (thinker model) with a custom "thinker" system prompt. Thinker response is sent back as a system message to the history-aware model to generate an actual response. I also inject hints on next steps to guide model.
-- Web Search: this is implemented among with locally running SearXNG instance. First, I defined `Web Search` tool which uses SearXNG to retrieve a list of relevant links upon model request. Then, it uses `Get Page Contents` tool on a selected link to scrape actual contents. I run a headless browser via puppeteer which evaluates `document.body.innerText` on a given page after it's loaded. Raw page text content is sent to a separate LLM call (summarizer model) with a custom "summarizer" system prompt. Summarizer writes a concise and structured summary which is sent back to the history-aware model to finally generate response. At this point there could be a lot of content below user request so sometimes model just describes results without a proper thought on what was requested by user. Bonus point: to avoid (rather minimise) robot checks and rejections, I add custom User-Agent and some headers - it works much better.
+- System prompt
+	- Social Rule Book: a list of rules to introduce social boundary bias and reduce censorship
+	- General behavior: guidance to make model responses more human-like and realistic
+	- Thinking: define tag-like message format with <message> containing response and <think> containing thoughts per request
+	- Multi-User Conversations: user messages contain <metadata> tag with <name>, <date> and other details of the message, this essentially provides knowledge about sender. This field is removed if present from raw user messages
+	- Remote Images: model is allowed to provide a set of direct URLs to remote images within a separate <image> tag
+	- Formatting: LLMs tend to use Markdown that doesn't perfectly align with Telegram requirements, so I define guidelines in Markdown to align it better. Then, each formatting feature such as bold text or code blocks is replaced by Regex with its HTML counter-part. This ensures that model can't accidentially crash message sending via formatting. Note that I save and feed message history to the model with original Markdown formatting so that it doesn't get confused and generates consistent text. Just in case whenever it fails to send a message I retry it with Telegram formatting disabled, in which case I use raw Markdown response because of it's more human-friendly nature. This works very well and is bullet-proof
+- Tools
+	- Web Search: `search_web` tool uses locally running SearXNG to retrieve a list of relevant links given `query` and `category` (requested to be either `text` or `image`). As a response, model receives a bullet list of `source_url`, `title` and `image_url` for image search. Response wording and guides are adjusted based on category
+	- Get Text Contets: `get_text_contents` tool uses headless browser to evaluate `document.body.innerText` essentially extracting all text from the web page. Result is passed to a separate LLM call (summarizer) with a request to summarize contents and remove metadata, summary is then given to main (chat context aware) model to respond. The tool is usually used after `search_web` for `text` category search. Bonus point: to avoid (rather minimise) robot checks and rejections on websites, I add custom User-Agent and some headers - it works much better (see `src/services/browser.ts`).
 
 ## Running
 - Use `npm start` to run
@@ -38,4 +43,4 @@ The project was initiated out of enthusiasm to develop a single, fully local AI 
 - Powered by [ExposedCat Dev](https://t.me/ExposedCatDev)
 
 ## Licence
-Whole repository is licenced under GPL3.0
+The repository is licenced under GPL3.0

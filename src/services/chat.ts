@@ -1,10 +1,13 @@
 import ollama from "ollama";
 import type { ChatResponse, Message, Tool } from "ollama";
 
+import { resolve } from "@grammyjs/i18n/script/src/deps.js";
 import type { Browser } from "puppeteer";
 import type { Chat, ThreadMessage } from "../types/database.js";
 import { buildHistory } from "./message.js";
 import {
+	IMAGES_END,
+	IMAGES_START,
 	MESSAGE_END,
 	MESSAGE_START,
 	THOUGHTS_END,
@@ -13,12 +16,15 @@ import {
 	TOOL_UNAVAILABLE_PROMPT,
 	makeSystemPrompt,
 } from "./prompt.js";
-import { callGetContentsTool, getContentsTool } from "./tools/contents.js";
+import {
+	callGetContentsTool,
+	getContentsTool,
+} from "./tools/get-text-contents.js";
 import {
 	SEARCH_WEB_PREFIX,
 	callWebSearchTool,
 	searchTool,
-} from "./tools/search.js";
+} from "./tools/web-search.js";
 
 const MODEL = "qwen2.5:14b";
 
@@ -33,7 +39,7 @@ const TOOL_USE_LIMIT = 5;
 const TOOLS = [searchTool, getContentsTool];
 const TOOL_MAP: Record<string, Tool[]> = {
 	search_web: [getContentsTool],
-	get_contents: [],
+	get_text_contents: [],
 };
 
 async function processResponse(
@@ -44,6 +50,7 @@ async function processResponse(
 	systemPrompt: string,
 	_usage = 0,
 ) {
+	let finalResponse = response;
 	const toolResponses = [];
 
 	const usage = _usage + 1;
@@ -58,11 +65,13 @@ async function processResponse(
 	}
 
 	if (toolCall?.function.name === "search_web") {
-		const arg = toolCall.function.arguments.query ?? "<empty>";
-		await onAction?.(toolCall.function.name, arg);
-		const response = await callWebSearchTool(arg);
+		const query = toolCall.function.arguments.query ?? "<empty>";
+		const category = toolCall.function.arguments.category ?? "text";
+		const action = category === "image" ? "image_search" : "web_search";
+		await onAction?.(action, query);
+		const response = await callWebSearchTool(query, category);
 		toolResponses.push(response);
-	} else if (toolCall?.function.name === "get_contents") {
+	} else if (toolCall?.function.name === "get_text_contents") {
 		const arg = toolCall?.function.arguments.url;
 		await onAction?.(toolCall.function.name, arg);
 		const response = await callGetContentsTool(browser, arg, MODEL);
@@ -86,20 +95,23 @@ async function processResponse(
 			messages: buildHistory(systemPrompt, history),
 			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
 		});
-		if (actualResponse.message.content) {
-			return actualResponse.message.content;
+		if (!actualResponse.message.content) {
+			return processResponse(
+				actualResponse,
+				browser,
+				history,
+				onAction,
+				systemPrompt,
+				usage,
+			);
 		}
-		return processResponse(
-			actualResponse,
-			browser,
-			history,
-			onAction,
-			systemPrompt,
-			usage,
-		);
+		finalResponse = actualResponse;
 	}
 
-	return response.message.content ?? "";
+	return {
+		content: finalResponse.message.content ?? "",
+		tokens: finalResponse.prompt_eval_count + finalResponse.eval_count,
+	};
 }
 
 export async function answerChatMessage({
@@ -118,7 +130,7 @@ export async function answerChatMessage({
 		tools: TOOLS,
 	});
 
-	let content = await processResponse(
+	let { content, tokens } = await processResponse(
 		answer,
 		browser,
 		history,
@@ -129,19 +141,26 @@ export async function answerChatMessage({
 	if (!content.includes(MESSAGE_START)) {
 		content = `${MESSAGE_START}\n${content}`;
 	}
+
 	const message =
 		content.split(MESSAGE_START).at(1)?.split(MESSAGE_END).at(0)?.trim() ?? "";
+	const imageSection =
+		content.split(IMAGES_START).at(1)?.split(IMAGES_END).at(0)?.trim() ?? "";
 	const thoughts =
 		content.split(THOUGHTS_START).at(1)?.split(THOUGHTS_END).at(0)?.trim() ??
 		"";
 
+	const images = imageSection.split("\n").map((url) => url.trim());
+
 	return {
-		raw: `${THOUGHTS_START}
-		${thoughts}
-		${THOUGHTS_END}
-		${MESSAGE_START}
+		raw: `${MESSAGE_START}
 		${message}
-		${MESSAGE_END}`,
+		${MESSAGE_END}
+		${IMAGES_START}
+		${images}
+		${IMAGES_END}`,
+		images,
+		tokens,
 		thoughts,
 		message,
 	};

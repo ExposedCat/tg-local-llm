@@ -47,7 +47,7 @@ messageController
 			!rawText.startsWith("//");
 
 		if (shouldReply) {
-			const images: string[] = [];
+			const inputImages: string[] = [];
 			if (ctx.message.photo) {
 				await ctx.replyWithChatAction("upload_photo");
 				const file = await ctx.getFile();
@@ -55,7 +55,7 @@ messageController
 					const image = await downloadFile(
 						`https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`,
 					);
-					images.push(image);
+					inputImages.push(image);
 				}
 			}
 
@@ -74,7 +74,11 @@ messageController
 						];
 
 			const userMessage = threaded(
-				buildUserMessage({ message: senderMessageText, senderName, images }),
+				buildUserMessage({
+					message: senderMessageText,
+					senderName,
+					images: inputImages,
+				}),
 				senderId,
 			);
 			inputMessages.push(userMessage);
@@ -85,8 +89,9 @@ messageController
 			let actionMessageId: number | null = null;
 			const onAction = async (action: string, arg?: string) => {
 				const actionLabels: Record<string, (() => string) | undefined> = {
-					search_web: () => `Searching "${arg}"...`,
-					get_contents: () =>
+					web_search: () => `Searching "${arg}"...`,
+					image_search: () => `Searching "${arg}" (images)...`,
+					get_text_contents: () =>
 						`Reading <a href="${arg}">${arg ? new URL(arg).host : "web page"}</a>...`,
 				};
 				const label = actionLabels[action]?.() ?? action;
@@ -104,7 +109,7 @@ messageController
 				}
 			};
 
-			const { raw, message } = await answerChatMessage({
+			const { raw, message, images, tokens } = await answerChatMessage({
 				browser: ctx.browser,
 				history: [...(thread?.messages ?? []), ...inputMessages],
 				onAction,
@@ -128,13 +133,23 @@ messageController
 						: `${actionText}\n\n`;
 					const content = formatting ? markdownToHtml(message) : message;
 
-					return await ctx.reply(`${actionPrefix}${content}` || "⁠", {
-						reply_parameters: { message_id: messageId },
-						parse_mode: formatting ? "HTML" : undefined,
-						message_thread_id: ctx.message.is_topic_message
-							? threadId
-							: undefined,
-					});
+					return await ctx.reply(
+						`${actionPrefix}${content}\n\nTokens used: ${tokens}` || "⁠",
+						{
+							reply_parameters: { message_id: messageId },
+							parse_mode: formatting ? "HTML" : undefined,
+							message_thread_id: ctx.message.is_topic_message
+								? threadId
+								: undefined,
+							link_preview_options: images.at(0)
+								? {
+										is_disabled: false,
+										prefer_large_media: true,
+										url: images[0],
+									}
+								: undefined,
+						},
+					);
 				} catch (error) {
 					if (formatting) {
 						console.warn("Failed to respond with formatting:", error);
