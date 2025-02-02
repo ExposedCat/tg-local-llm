@@ -98,7 +98,7 @@ export const searchTool: Tool = {
 	function: {
 		name: "search_web",
 		description:
-			'Search the Internet for unknown knowledge, news, info, public contact info, weather, realtime data, etc. For image search set category to "image"',
+			'Search the Internet for unknown knowledge, news, info, public contact info, weather, realtime data, etc. Always use this when you are asked about some recent events or updates. Don\'t ask user for specific search terms. For image search set category to "image"',
 		parameters: {
 			type: "object",
 			properties: {
