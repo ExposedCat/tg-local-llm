@@ -12,7 +12,6 @@ The project was initiated out of enthusiasm to develop a single, fully local AI 
 - Supports TL;DR, analysis, etc. requests by replies
 - Works with images (depends on LLM capabilities. Currently used Qwen2.5 doesn't support images)
 - Can use Web Search (text and image) if you ask for it
-- Can use Brain Module (thinking process) if you ask for it
 - Minimal censorship
 - Human-like character
 
@@ -34,8 +33,7 @@ The project was initiated out of enthusiasm to develop a single, fully local AI 
 
 ## Development / Adjustments
 - Change system prompt at `src/services/prompt.ts`. This includes name and behavior
-- Change `MODEL` at `src/services/chat.ts`. Supports any model by [Ollama](https://ollama.com). Model must be pulled first
-- Change SearXNG url at `src/services/tools/search.ts`
+- Change `MODEL`, `CONTEXT` size and `SEARXNG_URL` at `.env`. Supports any model by [Ollama](https://ollama.com). Model must be pulled first
 
 ## Credits
 - Big thanks to all open-source LLM developers

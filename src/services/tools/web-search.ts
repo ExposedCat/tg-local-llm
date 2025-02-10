@@ -1,8 +1,6 @@
 import type { Tool } from "ollama";
 import { IMAGES_START } from "../prompt.js";
 
-const SEARCH_ENDPOINT = "http://127.0.0.1:8088/search?format=json";
-
 type SearchEntry = {
 	url: string;
 	title: string;
@@ -37,7 +35,7 @@ async function searchWeb(
 	query: string,
 	category: "text" | "image",
 ): Promise<SearchWebResponse> {
-	const uri = `${SEARCH_ENDPOINT}${category === "image" ? "&categories=images" : ""}&q=${encodeURIComponent(query)}`;
+	const uri = `${process.env.SEARXNG_URL}${category === "image" ? "&categories=images" : ""}&q=${encodeURIComponent(query)}`;
 	try {
 		const request = await fetch(uri);
 		const response: SearchApiResponse = await request.json();

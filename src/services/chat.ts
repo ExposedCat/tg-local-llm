@@ -3,7 +3,8 @@ import type { ChatResponse, Message, Tool } from "ollama";
 
 import type { Browser } from "puppeteer";
 import type { Chat, ThreadMessage } from "../types/database.js";
-import { buildHistory } from "./message.js";
+import { validateURL } from "./formatting.js";
+import { buildAssistantMessage, buildHistory, threaded } from "./message.js";
 import { generate } from "./ollama.js";
 import {
 	IMAGES_END,
@@ -14,6 +15,7 @@ import {
 	THOUGHTS_START,
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
+	URL_INVALID_PROMPT,
 	makeSystemPrompt,
 } from "./prompt.js";
 import {
@@ -49,45 +51,43 @@ async function processResponse(
 	_usage = 0,
 ) {
 	let finalResponse = response;
-	const toolResponses = [];
-
-	const usage = _usage + 1;
-	if (usage > TOOL_USE_LIMIT) {
-		toolResponses.push(TOOL_LIMIT_PROMPT);
-	}
+	let toolResponse: string | null = null;
+	const newHistory: ThreadMessage[] = [];
 
 	const toolCall = response.message.tool_calls?.at(0);
+	const usage = _usage + 1;
 
-	if (history.at(-1)?.content.startsWith(SEARCH_WEB_PREFIX)) {
-		history.pop();
+	if (usage > TOOL_USE_LIMIT && toolCall) {
+		toolResponse = TOOL_LIMIT_PROMPT;
+	} else {
+		if (toolCall?.function.name === "search_web") {
+			const query = toolCall.function.arguments.query ?? "<empty>";
+			const category = toolCall.function.arguments.category ?? "text";
+			const action = category === "image" ? "image_search" : "web_search";
+			await onAction?.(action, query);
+			const response = await callWebSearchTool(query, category);
+			toolResponse = response;
+		} else if (toolCall?.function.name === "get_text_contents") {
+			const arg = validateURL(toolCall?.function.arguments.url);
+			if (arg) {
+				await onAction?.(toolCall.function.name, arg);
+				const response = await callGetContentsTool(browser, arg);
+				toolResponse = response;
+			} else {
+				toolResponse = URL_INVALID_PROMPT;
+			}
+		} else if (toolCall) {
+			toolResponse = TOOL_UNAVAILABLE_PROMPT;
+		}
 	}
 
-	if (toolCall?.function.name === "search_web") {
-		const query = toolCall.function.arguments.query ?? "<empty>";
-		const category = toolCall.function.arguments.category ?? "text";
-		const action = category === "image" ? "image_search" : "web_search";
-		await onAction?.(action, query);
-		const response = await callWebSearchTool(query, category);
-		toolResponses.push(response);
-	} else if (toolCall?.function.name === "get_text_contents") {
-		const arg = toolCall?.function.arguments.url;
-		await onAction?.(toolCall.function.name, arg);
-		const response = await callGetContentsTool(browser, arg);
-		toolResponses.push(response);
-	} else if (toolCall) {
-		toolResponses.push(TOOL_UNAVAILABLE_PROMPT);
-	}
-
-	if (toolResponses.length !== 0) {
-		history.push(
-			...toolResponses.map(
-				(response) =>
-					({
-						role: "system",
-						content: response,
-					}) as Message,
-			),
-		);
+	if (toolResponse !== null) {
+		const toolResponseEntry: Message = {
+			role: "system",
+			content: toolResponse,
+		};
+		history.push(toolResponseEntry);
+		newHistory.push(threaded(toolResponseEntry));
 		const actualResponse = await generate({
 			messages: buildHistory(systemPrompt, history),
 			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
@@ -106,6 +106,7 @@ async function processResponse(
 	}
 
 	return {
+		newHistory,
 		content: finalResponse.message.content ?? "",
 		tokens: finalResponse.prompt_eval_count + finalResponse.eval_count,
 	};
@@ -126,7 +127,7 @@ export async function answerChatMessage({
 		tools: TOOLS,
 	});
 
-	let { content, tokens } = await processResponse(
+	let { content, tokens, newHistory } = await processResponse(
 		answer,
 		browser,
 		history,
@@ -159,5 +160,6 @@ export async function answerChatMessage({
 		tokens,
 		thoughts,
 		message,
+		newHistory,
 	};
 }
