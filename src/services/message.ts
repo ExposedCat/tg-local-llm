@@ -1,4 +1,4 @@
-import type { Message } from "ollama";
+import type { Message, ToolCall } from "ollama";
 import type { ThreadMessage } from "../types/database.js";
 import {
 	MESSAGE_END,
@@ -13,11 +13,15 @@ export type BuildUserMessageArgs = {
 	images: string[];
 };
 
-export function buildAssistantMessage(response: string): Message {
+export function buildAssistantMessage(
+	response: string,
+	toolCalls?: ToolCall[],
+): Message {
 	return {
 		role: "assistant",
 		content: response,
 		images: [],
+		tool_calls: toolCalls ?? [],
 	};
 }
 
@@ -36,9 +40,13 @@ export function buildUserMessage({
 	};
 }
 
-export const threaded = (message: Message, fromId?: number) =>
+export const threaded = (
+	{ tool_calls, ...message }: Message,
+	fromId?: number,
+) =>
 	({
 		...message,
+		toolCalls: tool_calls,
 		fromId: fromId ?? -1,
 	}) as ThreadMessage;
 

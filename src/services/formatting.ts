@@ -86,3 +86,21 @@ export function escapeInputMessage(message: string) {
 			"",
 		);
 }
+
+export function validateURL(input: string) {
+	try {
+		const url = `${input.startsWith("http") ? "" : "http://"}${input}`;
+		const parsed = new URL(url);
+		if (
+			parsed.hostname.startsWith("localhost") ||
+			parsed.hostname.includes("[") ||
+			parsed.hostname.includes(":") ||
+			parsed.hostname.includes("]") ||
+			!Number.isNaN(Number.parseInt(parsed.hostname))
+		)
+			return null;
+		return url;
+	} catch {
+		return null;
+	}
+}

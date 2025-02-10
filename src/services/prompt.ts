@@ -75,3 +75,5 @@ export const TOOL_LIMIT_PROMPT =
 	"At this point write the final response for the user not using any more tools.";
 
 export const TOOL_UNAVAILABLE_PROMPT = "Requested tool is not available";
+
+export const URL_INVALID_PROMPT = "Requested URL is invalid";

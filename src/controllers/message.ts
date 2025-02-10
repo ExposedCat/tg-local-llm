@@ -109,12 +109,13 @@ messageController
 				}
 			};
 
-			const { raw, message, images } = await answerChatMessage({
-				browser: ctx.browser,
-				history: [...(thread?.messages ?? []), ...inputMessages],
-				onAction,
-				preferences: ctx.chatPreferences,
-			});
+			const { raw, message, images, tokens, newHistory } =
+				await answerChatMessage({
+					browser: ctx.browser,
+					history: [...(thread?.messages ?? []), ...inputMessages],
+					onAction,
+					preferences: ctx.chatPreferences,
+				});
 
 			if (actionMessageId) {
 				try {
@@ -132,8 +133,11 @@ messageController
 						? responseActions
 						: `${actionText}\n\n`;
 					const content = formatting ? markdownToHtml(message) : message;
+					const limit = ctx.chatPreferences.showLimit
+						? `\n\n${formatting ? "<i>" : ""}Message limit${formatting ? "</i>" : ""}: ${((tokens / Number(process.env.CONTEXT)) * 100).toFixed(1)}%`
+						: "";
 
-					return await ctx.reply(`${actionPrefix}${content}` || "⁠", {
+					return await ctx.reply(`${actionPrefix}${content}${limit}` || "⁠", {
 						reply_parameters: { message_id: messageId },
 						parse_mode: formatting ? "HTML" : undefined,
 						message_thread_id: ctx.message.is_topic_message
@@ -164,6 +168,7 @@ messageController
 
 			const newMessages: ThreadMessage[] = [
 				...inputMessages,
+				...newHistory,
 				threaded(buildAssistantMessage(raw)),
 			];
 
