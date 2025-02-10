@@ -1,11 +1,12 @@
-import { startApp } from "./config/app.js";
+import { startApp } from "./config/app.ts";
 
 console.debug("Starting app at ", new Date().toLocaleString());
 const dispose = await startApp();
 console.debug("App started");
 
-process.on("exit", dispose);
-process.on("SIGINT", dispose);
-process.on("SIGUSR1", dispose);
-process.on("SIGUSR2", dispose);
-process.on("uncaughtException", dispose);
+Deno.addSignalListener("SIGINT", dispose);
+Deno.addSignalListener("SIGTERM", dispose);
+Deno.addSignalListener("SIGUSR1", dispose);
+Deno.addSignalListener("SIGUSR2", dispose);
+addEventListener("unhandledrejection", dispose);
+addEventListener("error", dispose);

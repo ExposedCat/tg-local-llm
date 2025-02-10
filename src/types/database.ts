@@ -1,5 +1,5 @@
-import type { Collection } from "mongodb";
-import type { ToolCall } from "ollama";
+import type { Collection } from "npm:mongodb";
+import type { ToolCall } from "npm:ollama";
 
 export type ThreadMessage = {
 	role: "user" | "assistant" | "system";

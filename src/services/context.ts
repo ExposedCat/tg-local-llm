@@ -1,4 +1,4 @@
-import type { DefaultContext } from "../types/context.js";
+import type { DefaultContext } from "../types/context.ts";
 
 export function createReplyWithTextFunc(
 	ctx: DefaultContext,

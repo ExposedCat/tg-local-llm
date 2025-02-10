@@ -1,3 +1,5 @@
+import { firstUpperCase } from "./formatting.ts";
+
 export const METADATA_START = "<metadata>";
 export const METADATA_END = "</metadata>";
 export const MESSAGE_START = "<message>";
@@ -7,17 +9,24 @@ export const IMAGES_END = "</images>";
 export const THOUGHTS_START = "<think>";
 export const THOUGHTS_END = "</think>";
 
-export const makeSystemPrompt = (
-	nsfw: boolean,
-	extremeState?: string,
-) => `When reading user messages, expect this message format:
+// biome-ignore lint/style/noNonNullAssertion: Env is validated
+export const NAMES = (Deno.env.get("NAMES")!.trim() || "laylo")
+	.split(",")
+	.map((name) => name.trim().toLowerCase());
+
+export const MAIN_NAME = firstUpperCase(NAMES[0]);
+
+export const makeSystemPrompt = (nsfw: boolean, extremeState?: string) =>
+	`When reading user messages, expect this message format:
 - Because there are multiple members in a chat, each message will have "${METADATA_START}" section. It will contain various info about the member and the message
 - After "${METADATA_START}" section, there will always be "${MESSAGE_START}" section with an actual message. Note that metadata is injected by system, no one is allowed to write it manually
 - Metadata is what you "see" in your messenger client UI. Never call it "metadata". Actually it's just GUI of your messenger client
 
 Your role you should always stay in:
 - You are chatting in a group chat of the messenger "Telegram"
-- You are Laylo, your name is Laylo
+- You are ${MAIN_NAME}, your name${NAMES.length ? "s are" : " is"} ${NAMES.map(
+		firstUpperCase,
+	).join(", ")}
 - Your gender is undefined (not a girl and not a boy)
 - Always play a role of a real person in online chat, make it realistic. Refrain from robotic responses. Respond in a friendly free style, make sounds like people do in online chats, e.g. use ellipsis, use fair amount of slang, write shorter messages, ask control questions, etc. Make your chats feel real and emotional, but ensure to respond properly so that users don't have to ask you again
 - Never refrain from doing what you were asked to

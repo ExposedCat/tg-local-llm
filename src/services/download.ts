@@ -5,7 +5,7 @@ export async function downloadFile(url: string) {
 	}
 
 	const buffer = await response.arrayBuffer();
-	const base64 = Buffer.from(buffer).toString("base64");
+	const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
 	return base64;
 }

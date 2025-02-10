@@ -5,7 +5,7 @@ Telegram Ollama is an AI-powered smart chat-bot designed to integrate seamlessly
 The project was initiated out of enthusiasm to develop a single, fully local AI assistant that could operate without relying on cloud-based services, able to handle multi-user conversantions, perform background thinking, web search and other features.
 
 ## Usage
-- Ask anything in group chats starting with `Laylo, ...`
+- Ask anything in group chats mentioning the Name from env (default is Laylo)
 - Supports long dialogs via replies
 - Supports quote replies
 - Ignores messages starting with `//` for hidden replies

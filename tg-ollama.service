@@ -1,13 +1,13 @@
 [Unit]
 Description=$DESCRIPTION
-After=network.target
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple
-User=$USER
 WorkingDirectory=$DIR
-ExecStart=/usr/bin/node .
-Restart=always
+ExecStart=/home/$USER/.deno/bin/deno task start
+Restart=never
 
 [Install]
 WantedBy=multi-user.target

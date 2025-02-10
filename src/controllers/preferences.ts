@@ -1,7 +1,8 @@
 import { Composer } from "grammy";
-import { setChatPreferences } from "../services/database.js";
-import type { DefaultContext } from "../types/context.js";
-import type { Chat } from "../types/database.js";
+import { setChatPreferences } from "../services/database.ts";
+import { MAIN_NAME } from "../services/prompt.ts";
+import type { DefaultContext } from "../types/context.ts";
+import type { Chat } from "../types/database.ts";
 
 export const preferencesController = new Composer<DefaultContext>();
 
@@ -22,7 +23,7 @@ const preferenceResponses = {
 		input: "string",
 		nullable: true,
 		message: (state: string | undefined) =>
-			`Laylo will now be ${state ? `extremely ${state}` : "normal"}`,
+			`${MAIN_NAME} will now be ${state ? `extremely ${state}` : "normal"}`,
 	},
 	limit: {
 		input: "boolean",

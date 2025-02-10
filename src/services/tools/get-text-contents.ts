@@ -1,15 +1,17 @@
 import type { Tool } from "ollama";
 import type { Browser } from "puppeteer";
-import { scrapePage } from "../browser.js";
-import { generate } from "../ollama.js";
+import { scrapePage } from "../browser.ts";
+import { generate } from "../ollama.ts";
 
 export const GET_CONTENTS_PREFIX = "[Your Web Browser: Page Text Contents]";
 
 export async function callGetContentsTool(browser: Browser, url: string) {
-	let content = `Requested URL "${url}" is invalid. Don't make up URLs, use one exactly from search results or user request.`;
+	let content: string;
 	try {
 		content = await scrapePage(browser, url);
-	} catch {}
+	} catch {
+		content = `Requested URL "${url}" is invalid. Don't make up URLs, use one exactly from search results or user request.`;
+	}
 	const summaryResponse = await generate({
 		messages: [
 			{

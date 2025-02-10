@@ -1,10 +1,10 @@
-import type { Chat, Database } from "../types/database";
+import type { Chat, Database } from "../types/database.ts";
 
 export async function getOrCreateChatPreferences(
 	chatId: number,
 	database: Database,
 ) {
-	const { value } = await database.chat.findOneAndUpdate(
+	const entry = await database.chat.findOneAndUpdate(
 		{ chatId },
 		{
 			$setOnInsert: {
@@ -19,7 +19,7 @@ export async function getOrCreateChatPreferences(
 		},
 	);
 	// biome-ignore lint/style/noNonNullAssertion: upsert ensures value
-	return value!;
+	return entry!;
 }
 
 export async function setChatPreferences(

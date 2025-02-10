@@ -1,15 +1,16 @@
 import { Composer } from "grammy";
-import { answerChatMessage } from "../services/chat.js";
-import { downloadFile } from "../services/download.js";
-import { escapeInputMessage, markdownToHtml } from "../services/formatting.js";
+import { answerChatMessage } from "../services/chat.ts";
+import { downloadFile } from "../services/download.ts";
+import { escapeInputMessage, markdownToHtml } from "../services/formatting.ts";
 import {
 	buildAssistantMessage,
 	buildUserMessage,
 	threaded,
-} from "../services/message.js";
-import { createThread, getThread, updateThread } from "../services/thread.js";
-import type { DefaultContext } from "../types/context.js";
-import type { ThreadMessage } from "../types/database.js";
+} from "../services/message.ts";
+import { NAMES } from "../services/prompt.ts";
+import { createThread, getThread, updateThread } from "../services/thread.ts";
+import type { DefaultContext } from "../types/context.ts";
+import type { ThreadMessage } from "../types/database.ts";
 
 export const messageController = new Composer<DefaultContext>();
 messageController
@@ -43,7 +44,7 @@ messageController
 		const shouldReply =
 			(thread ||
 				(replyTo && replyTo === ctx.me.id) ||
-				rawText.toLowerCase().includes("laylo")) &&
+				NAMES.some((name) => rawText.toLowerCase().includes(name))) &&
 			!rawText.startsWith("//");
 
 		if (shouldReply) {
@@ -92,7 +93,9 @@ messageController
 					web_search: () => `Searching "${arg}"...`,
 					image_search: () => `Searching "${arg}" (images)...`,
 					get_text_contents: () =>
-						`Reading <a href="${arg}">${arg ? new URL(arg).host : "web page"}</a>...`,
+						`Reading <a href="${arg}">${
+							arg ? new URL(arg).host : "web page"
+						}</a>...`,
 				};
 				const label = actionLabels[action]?.() ?? action;
 				actionText += `\n${label}`;
@@ -120,7 +123,9 @@ messageController
 			if (actionMessageId) {
 				try {
 					await ctx.api.deleteMessage(ctx.chat.id, actionMessageId);
-				} catch {}
+				} catch {
+					// Ignore
+				}
 			}
 
 			const responseActions = actionText
@@ -134,7 +139,9 @@ messageController
 						: `${actionText}\n\n`;
 					const content = formatting ? markdownToHtml(message) : message;
 					const limit = ctx.chatPreferences.showLimit
-						? `\n\n${formatting ? "<i>" : ""}Message limit${formatting ? "</i>" : ""}: ${((tokens / Number(process.env.CONTEXT)) * 100).toFixed(1)}%`
+						? `\n\n${formatting ? "<i>" : ""}Message limit${
+								formatting ? "</i>" : ""
+							}: ${((tokens / Number(Deno.env.get("CONTEXT"))) * 100).toFixed(1)}%`
 						: "";
 
 					return await ctx.reply(`${actionPrefix}${content}${limit}` || "⁠", {

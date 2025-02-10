@@ -1,5 +1,5 @@
 import puppeteer, { type Browser } from "puppeteer";
-import { validateURL } from "./formatting.js";
+import { validateURL } from "./formatting.ts";
 
 export function startBrowser() {
 	return puppeteer.launch({
@@ -43,6 +43,7 @@ export async function scrapePage(browser: Browser, url: string) {
 		waitUntil: "domcontentloaded",
 		timeout: 10_000,
 	});
+	// @ts-expect-error untyped for Deno
 	const text = await page.evaluate(() => document.body.innerText);
 	return text;
 }

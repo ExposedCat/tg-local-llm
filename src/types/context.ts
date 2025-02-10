@@ -1,9 +1,9 @@
-import type { I18nFlavor, TranslationVariables } from "@grammyjs/i18n";
 import type { Api, Context, SessionFlavor } from "grammy";
-import type { ReplyKeyboardMarkup } from "grammy/types";
+import type { I18nFlavor, TranslationVariables } from "i18n";
 
-import type { Browser } from "puppeteer";
-import type { Chat, Database } from "./database.js";
+import type { Browser } from "npm:puppeteer";
+import type { ReplyKeyboardMarkup } from "grammy-types";
+import type { Chat, Database } from "./database.ts";
 
 type ReplyKeyboardExtra = { reply_markup: ReplyKeyboardMarkup };
 

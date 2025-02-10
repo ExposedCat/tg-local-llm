@@ -3,7 +3,7 @@ import {
 	MESSAGE_START,
 	METADATA_END,
 	METADATA_START,
-} from "./prompt.js";
+} from "./prompt.ts";
 
 function makeHeader(input: string) {
 	const unicodeMap: Record<string, string> = {
@@ -97,10 +97,15 @@ export function validateURL(input: string) {
 			parsed.hostname.includes(":") ||
 			parsed.hostname.includes("]") ||
 			!Number.isNaN(Number.parseInt(parsed.hostname))
-		)
+		) {
 			return null;
+		}
 		return url;
 	} catch {
 		return null;
 	}
+}
+
+export function firstUpperCase(input: string) {
+	return input.charAt(0).toUpperCase() + input.slice(1);
 }

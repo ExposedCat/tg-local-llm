@@ -1,18 +1,16 @@
-import type { I18n } from "@grammyjs/i18n";
 import { Bot as TelegramBot, session } from "grammy";
+import type { I18n } from "i18n";
 
-import type { Browser } from "puppeteer";
-import { messageController } from "../controllers/message.js";
-import { preferencesController } from "../controllers/preferences.js";
-import { startController } from "../controllers/start.js";
-import { stopController } from "../controllers/stop.js";
-import { resolvePath } from "../helpers/resolve-path.js";
-import { createReplyWithTextFunc } from "../services/context.js";
-import { getOrCreateChatPreferences } from "../services/database.js";
-import type { DefaultContext } from "../types/context.js";
-import type { Database } from "../types/database.js";
-import type { Bot } from "../types/telegram.js";
-import { initLocaleEngine } from "./locale-engine.js";
+import type { Browser } from "npm:puppeteer";
+import { messageController } from "../controllers/message.ts";
+import { preferencesController } from "../controllers/preferences.ts";
+import { resolvePath } from "../helpers/resolve-path.ts";
+import { createReplyWithTextFunc } from "../services/context.ts";
+import { getOrCreateChatPreferences } from "../services/database.ts";
+import type { DefaultContext } from "../types/context.ts";
+import type { Database } from "../types/database.ts";
+import type { Bot } from "../types/telegram.ts";
+import { initLocaleEngine } from "./locale-engine.ts";
 
 function extendContext(bot: Bot, database: Database, browser: Browser) {
 	bot.api.config.use((prev, method, payload, signal) => {
@@ -68,18 +66,15 @@ function setupMiddlewares(bot: Bot, localeEngine: I18n) {
 }
 
 function setupControllers(bot: Bot) {
-	bot.use(startController);
-	bot.use(stopController);
-
 	bot.use(preferencesController);
 
 	bot.use(messageController);
 }
 
-export async function startBot(database: Database, browser: Browser) {
+export function startBot(database: Database, browser: Browser) {
 	const localesPath = resolvePath(import.meta.url, "../locales");
 	const i18n = initLocaleEngine(localesPath);
-	const bot = new TelegramBot<DefaultContext>(process.env.TOKEN);
+	const bot = new TelegramBot<DefaultContext>(Deno.env.get("TOKEN") ?? "");
 
 	extendContext(bot, database, browser);
 	setupMiddlewares(bot, i18n);

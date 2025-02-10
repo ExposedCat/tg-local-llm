@@ -1,4 +1,4 @@
-import type { Database, Thread, ThreadMessage } from "../types/database.js";
+import type { Database, Thread, ThreadMessage } from "../types/database.ts";
 
 export type CreateThreadArgs = {
 	db: Database;
@@ -17,9 +17,7 @@ export async function createThread(args: CreateThreadArgs): Promise<Thread> {
 	return thread;
 }
 
-export async function getThread(
-	args: CreateThreadArgs,
-): Promise<Thread | null> {
+export function getThread(args: CreateThreadArgs): Promise<Thread | null> {
 	const { db, chatId, threadId } = args;
 	return db.thread.findOne({ chatId, threadId });
 }

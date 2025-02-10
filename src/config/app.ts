@@ -1,18 +1,17 @@
 import type { Browser } from "puppeteer";
-import { loadEnv } from "../helpers/load-env.js";
-import { validateEnv } from "../helpers/validate-env.js";
-import { startBrowser } from "../services/browser.js";
-import type { Database } from "../types/database.js";
-import { startBot } from "./bot.js";
-import { connectToDb } from "./database.js";
+import ollama from "ollama";
+import { validateEnv } from "../helpers/validate-env.ts";
+import { startBrowser } from "../services/browser.ts";
+import type { Database } from "../types/database.ts";
+import { startBot } from "./bot.ts";
+import { connectToDb } from "./database.ts";
 
 export async function startApp() {
 	try {
-		loadEnv("../../.env");
-		validateEnv(["TOKEN", "DB_CONNECTION_STRING"]);
+		validateEnv(["TOKEN", "DB_CONNECTION_STRING", "NAMES"]);
 	} catch (error) {
 		console.error("Error occurred while loading environment:", error);
-		process.exit(1);
+		Deno.exit(1);
 	}
 
 	let database: Database;
@@ -20,7 +19,7 @@ export async function startApp() {
 		database = await connectToDb();
 	} catch (error) {
 		console.error("Error occurred while connecting to the database:", error);
-		process.exit(2);
+		Deno.exit(2);
 	}
 
 	let browser: Browser;
@@ -28,17 +27,19 @@ export async function startApp() {
 		browser = await startBrowser();
 	} catch (error) {
 		console.error("Error occurred while starting browser:", error);
-		process.exit(3);
+		Deno.exit(3);
 	}
 
 	try {
 		await startBot(database, browser);
 	} catch (error) {
 		console.error("Error occurred while starting the bot:", error);
-		process.exit(4);
+		Deno.exit(4);
 	}
 
 	return async () => {
 		await browser.close();
+		ollama.abort();
+		Deno.exit(0);
 	};
 }

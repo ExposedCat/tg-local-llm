@@ -1,11 +1,10 @@
-import ollama from "ollama";
 import type { ChatResponse, Message, Tool } from "ollama";
 
 import type { Browser } from "puppeteer";
-import type { Chat, ThreadMessage } from "../types/database.js";
-import { validateURL } from "./formatting.js";
-import { buildAssistantMessage, buildHistory, threaded } from "./message.js";
-import { generate } from "./ollama.js";
+import type { Chat, ThreadMessage } from "../types/database.ts";
+import { validateURL } from "./formatting.ts";
+import { buildHistory, threaded } from "./message.ts";
+import { generate } from "./ollama.ts";
 import {
 	IMAGES_END,
 	IMAGES_START,
@@ -17,16 +16,12 @@ import {
 	TOOL_UNAVAILABLE_PROMPT,
 	URL_INVALID_PROMPT,
 	makeSystemPrompt,
-} from "./prompt.js";
+} from "./prompt.ts";
 import {
 	callGetContentsTool,
 	getContentsTool,
-} from "./tools/get-text-contents.js";
-import {
-	SEARCH_WEB_PREFIX,
-	callWebSearchTool,
-	searchTool,
-} from "./tools/web-search.js";
+} from "./tools/get-text-contents.ts";
+import { callWebSearchTool, searchTool } from "./tools/web-search.ts";
 
 export type RespondArgs = {
 	history: Message[];

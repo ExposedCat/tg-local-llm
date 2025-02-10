@@ -1,5 +1,5 @@
 import type { Tool } from "ollama";
-import { IMAGES_START } from "../prompt.js";
+import { IMAGES_START } from "../prompt.ts";
 
 type SearchEntry = {
 	url: string;
@@ -35,7 +35,9 @@ async function searchWeb(
 	query: string,
 	category: "text" | "image",
 ): Promise<SearchWebResponse> {
-	const uri = `${process.env.SEARXNG_URL}${category === "image" ? "&categories=images" : ""}&q=${encodeURIComponent(query)}`;
+	const uri = `${Deno.env.get("SEARXNG_URL") ?? ""}${
+		category === "image" ? "&categories=images" : ""
+	}&q=${encodeURIComponent(query)}`;
 	try {
 		const request = await fetch(uri);
 		const response: SearchApiResponse = await request.json();
@@ -68,7 +70,9 @@ export async function callWebSearchTool(
 	const resultList = result
 		.slice(0, 5)
 		.map((entry) => {
-			const source = `${category === "text" ? "url" : "source"}=\`${entry.url}\``;
+			const source = `${
+				category === "text" ? "url" : "source"
+			}=\`${entry.url}\``;
 			const rawTitle =
 				category === "text"
 					? entry.title
@@ -82,8 +86,22 @@ export async function callWebSearchTool(
 		})
 		.join("\n");
 
-	const prefix = `${SEARCH_WEB_PREFIX} Based on user request, select the most relevant ${category === "image" ? "image" : "URL"} from this list based on descriptions${category === "image" ? "" : ". Select only URL which describes information you need to respond to the last user message"}`;
-	const postfix = `${category === "text" ? "Use get_text_contents to read the most relevant URL" : `You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in a ${IMAGES_START} section`}. Note that this ${category === "image" ? "source" : "URL"} list is supplied by your internal Web Browser, not user, so don't ask user which ${category === "image" ? "source" : "URL"} to use, pick one yourself based on title relevancy.`;
+	const prefix = `${SEARCH_WEB_PREFIX} Based on user request, select the most relevant ${
+		category === "image" ? "image" : "URL"
+	} from this list based on descriptions${
+		category === "image"
+			? ""
+			: ". Select only URL which describes information you need to respond to the last user message"
+	}`;
+	const postfix = `${
+		category === "text"
+			? "Use get_text_contents to read the most relevant URL"
+			: `You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in a ${IMAGES_START} section`
+	}. Note that this ${
+		category === "image" ? "source" : "URL"
+	} list is supplied by your internal Web Browser, not user, so don't ask user which ${
+		category === "image" ? "source" : "URL"
+	} to use, pick one yourself based on title relevancy.`;
 
 	return `${prefix}: \`\`\`
 	${resultList}

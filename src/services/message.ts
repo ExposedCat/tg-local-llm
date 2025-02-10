@@ -1,11 +1,11 @@
 import type { Message, ToolCall } from "ollama";
-import type { ThreadMessage } from "../types/database.js";
+import type { ThreadMessage } from "../types/database.ts";
 import {
 	MESSAGE_END,
 	MESSAGE_START,
 	METADATA_END,
 	METADATA_START,
-} from "./prompt.js";
+} from "./prompt.ts";
 
 export type BuildUserMessageArgs = {
 	message: string;
@@ -35,7 +35,10 @@ export function buildUserMessage({
 
 	return {
 		role: "user",
-		content: `${METADATA_START}${field("from", senderName)}${field("message_date", new Date().toLocaleString())}\n${METADATA_END}\n${MESSAGE_START}\n${message}\n${MESSAGE_END}`,
+		content: `${METADATA_START}${field("from", senderName)}${field(
+			"message_date",
+			new Date().toLocaleString(),
+		)}\n${METADATA_END}\n${MESSAGE_START}\n${message}\n${MESSAGE_END}`,
 		images,
 	};
 }
