@@ -1,10 +1,12 @@
 import type { Collection } from "mongodb";
+import type { ToolCall } from "ollama";
 
 export type ThreadMessage = {
 	role: "user" | "assistant" | "system";
 	fromId: number | null;
 	content: string;
 	images?: string[];
+	toolCalls?: ToolCall[];
 };
 
 export type Thread = {
@@ -18,6 +20,7 @@ export type Chat = {
 	preferences: {
 		nsfw: boolean;
 		extremeState?: string;
+		showLimit?: boolean;
 	};
 };
 
