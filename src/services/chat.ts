@@ -4,14 +4,14 @@ import type { Browser } from "puppeteer";
 import type { Chat, ThreadMessage } from "../types/database.ts";
 import { validateURL } from "./formatting.ts";
 import { buildHistory, threaded } from "./message.ts";
-import { generate } from "./ollama.ts";
+import { generate, parseResponse } from "./ollama.ts";
 import {
 	IMAGES_END,
 	IMAGES_START,
 	MESSAGE_END,
 	MESSAGE_START,
-	THOUGHTS_END,
-	THOUGHTS_START,
+	// THOUGHTS_END,
+	// THOUGHTS_START,
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
 	URL_INVALID_PROMPT,
@@ -45,7 +45,12 @@ async function processResponse(
 	systemPrompt: string,
 	_usage = 0,
 ) {
-	let finalResponse = response;
+	let {
+		message: finalMessage,
+		images: finalImages,
+		tokensUsed: finalTokensUsed,
+	} = parseResponse(response);
+
 	let toolResponse: string | null = null;
 	const newHistory: ThreadMessage[] = [];
 
@@ -83,11 +88,17 @@ async function processResponse(
 		};
 		history.push(toolResponseEntry);
 		newHistory.push(threaded(toolResponseEntry));
-		const actualResponse = await generate({
+		const {
+			response: actualResponse,
+			images: actualImages,
+			message: actualMessage,
+			tokensUsed: actualTokensUsed,
+		} = await generate({
 			messages: buildHistory(systemPrompt, history),
 			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
+			onResponsePartial: (kind, chunk) => onAction?.(kind, chunk),
 		});
-		if (!actualResponse.message.content) {
+		if (!actualMessage) {
 			return processResponse(
 				actualResponse,
 				browser,
@@ -97,13 +108,16 @@ async function processResponse(
 				usage,
 			);
 		}
-		finalResponse = actualResponse;
+		finalMessage = actualMessage;
+		finalImages = actualImages;
+		finalTokensUsed = actualTokensUsed;
 	}
 
 	return {
 		newHistory,
-		content: finalResponse.message.content ?? "",
-		tokens: finalResponse.prompt_eval_count + finalResponse.eval_count,
+		message: finalMessage,
+		images: finalImages,
+		tokensUsed: finalTokensUsed,
 	};
 }
 
@@ -117,43 +131,30 @@ export async function answerChatMessage({
 		preferences.nsfw,
 		preferences.extremeState,
 	);
-	const answer = await generate({
+	const { response } = await generate({
 		messages: buildHistory(systemPrompt, history),
 		tools: TOOLS,
+		onResponsePartial: (kind, chunk) => onAction?.(kind, chunk),
 	});
 
-	let { content, tokens, newHistory } = await processResponse(
-		answer,
+	const { message, images, tokensUsed, newHistory } = await processResponse(
+		response,
 		browser,
 		history,
 		onAction,
 		systemPrompt,
 	);
 
-	if (!content.includes(MESSAGE_START)) {
-		content = `${MESSAGE_START}\n${content}`;
-	}
-
-	const message =
-		content.split(MESSAGE_START).at(1)?.split(MESSAGE_END).at(0)?.trim() ?? "";
-	const imageSection =
-		content.split(IMAGES_START).at(1)?.split(IMAGES_END).at(0)?.trim() ?? "";
-	const thoughts =
-		content.split(THOUGHTS_START).at(1)?.split(THOUGHTS_END).at(0)?.trim() ??
-		"";
-
-	const images = imageSection.split("\n").map((url) => url.trim());
-
 	return {
 		raw: `${MESSAGE_START}
 		${message}
 		${MESSAGE_END}
 		${IMAGES_START}
-		${images}
+		${images.join(",")}
 		${IMAGES_END}`,
 		images,
-		tokens,
-		thoughts,
+		tokensUsed,
+		// thoughts,
 		message,
 		newHistory,
 	};

@@ -12,6 +12,25 @@ import { createThread, getThread, updateThread } from "../services/thread.ts";
 import type { DefaultContext } from "../types/context.ts";
 import type { ThreadMessage } from "../types/database.ts";
 
+function booleanToggle(
+	callback: (value: boolean) => Promise<void>,
+): Promise<void> {
+	try {
+		return callback(true);
+	} catch {
+		return callback(false);
+	}
+}
+
+type ActionMapper = {
+	web_search: () => string;
+	image_search: () => string;
+	get_text_contents: () => string;
+	message: () => string;
+	tokens: () => number;
+	images: () => string | null;
+};
+
 export const messageController = new Composer<DefaultContext>();
 messageController
 	.chatType(["group", "supergroup"])
@@ -87,89 +106,94 @@ messageController
 			await ctx.replyWithChatAction("typing");
 
 			let actionText = "";
-			let actionMessageId: number | null = null;
-			const onAction = async (action: string, arg?: string) => {
-				const actionLabels: Record<string, (() => string) | undefined> = {
-					web_search: () => `Searching "${arg}"...`,
-					image_search: () => `Searching "${arg}" (images)...`,
-					get_text_contents: () =>
-						`Reading <a href="${arg}">${
-							arg ? new URL(arg).host : "web page"
-						}</a>...`,
-				};
-				const label = actionLabels[action]?.() ?? action;
-				actionText += `\n${label}`;
+			let messageText = "";
+			let image: string | null = null;
+			let tokens: number | null = null;
 
-				if (!actionMessageId) {
-					const message = await ctx.reply(actionText);
-					actionMessageId = message.message_id;
-				} else {
-					await ctx.api.editMessageText(
-						ctx.chat.id,
-						actionMessageId,
-						actionText.trim(),
-					);
-				}
-			};
+			let responseMessageId: number | null = null;
+			let responseMessageThreadId: number | null = null;
 
-			const { raw, message, images, tokens, newHistory } =
-				await answerChatMessage({
-					browser: ctx.browser,
-					history: [...(thread?.messages ?? []), ...inputMessages],
-					onAction,
-					preferences: ctx.chatPreferences,
-				});
-
-			if (actionMessageId) {
-				try {
-					await ctx.api.deleteMessage(ctx.chat.id, actionMessageId);
-				} catch {
-					// Ignore
-				}
-			}
-
-			const responseActions = actionText
-				? `<blockquote expandable>${actionText.trim()}</blockquote>`
-				: "";
-
-			const safeRespond = async (formatting = true) => {
-				try {
-					const actionPrefix = formatting
-						? responseActions
-						: `${actionText}\n\n`;
-					const content = formatting ? markdownToHtml(message) : message;
-					const limit = ctx.chatPreferences.showLimit
+			const buildMessage = (formatting: boolean, tokens: number | null) => {
+				const limit =
+					ctx.chatPreferences.showLimit && tokens !== null
 						? `\n\n${formatting ? "<i>" : ""}Message limit${
 								formatting ? "</i>" : ""
 							}: ${((tokens / Number(Deno.env.get("CONTEXT"))) * 100).toFixed(1)}%`
 						: "";
+				return `${formatting ? "<blockquote expandable>" : ""}${actionText.trim()}${formatting ? "</blockquote>" : ""}\n\n${formatting ? markdownToHtml(messageText) : messageText}${limit}`;
+			};
 
-					return await ctx.reply(`${actionPrefix}${content}${limit}` || "⁠", {
-						reply_parameters: { message_id: messageId },
-						parse_mode: formatting ? "HTML" : undefined,
-						message_thread_id: ctx.message.is_topic_message
-							? threadId
-							: undefined,
-						link_preview_options: images.at(0)
-							? {
-									is_disabled: false,
-									prefer_large_media: true,
-									url: images[0],
-								}
-							: undefined,
-					});
-				} catch (error) {
-					if (formatting) {
-						console.warn("Failed to respond with formatting:", error);
-						return safeRespond(false);
+			const buildExtra = (formatting: boolean) =>
+				({
+					reply_parameters: { message_id: messageId },
+					parse_mode: formatting ? "HTML" : undefined,
+					message_thread_id: ctx.message.is_topic_message
+						? threadId
+						: undefined,
+					link_preview_options: image
+						? { is_disabled: false, prefer_large_media: true, url: image }
+						: undefined,
+				}) as Parameters<typeof ctx.api.editMessageText>[3];
+
+			const onAction = async (
+				action: string,
+				arg?: string | number | string[],
+			) => {
+				const actionLabels: ActionMapper = {
+					web_search: () => `Searching "${arg}"...`,
+					image_search: () => `Searching "${arg}" (images)...`,
+					get_text_contents: () =>
+						`Reading <a href="${arg}">${
+							arg ? new URL(arg as string).host : "web page"
+						}</a>...`,
+					message: () => arg as string,
+					tokens: () => arg as number,
+					images: () => (arg as string).split(",").at(0) ?? null,
+				};
+				const processed = actionLabels[action as keyof ActionMapper]?.();
+				if (processed) {
+					if (action === "message") {
+						messageText = processed as string;
+					} else if (action === "images") {
+						image = processed as string | null;
+					} else if (action === "tokens") {
+						tokens = processed as number;
+					} else {
+						actionText += `\n${processed}`;
 					}
-					console.error("Failed to respond:", error);
-					return null;
+
+					await booleanToggle(async (formatting) => {
+						if (!responseMessageId) {
+							const message = await ctx.reply(
+								buildMessage(formatting, tokens ?? null),
+								buildExtra(formatting),
+							);
+							responseMessageId = message.message_id;
+							responseMessageThreadId = message.message_thread_id ?? null;
+						} else {
+							await ctx.api.editMessageText(
+								ctx.chat.id,
+								responseMessageId,
+								buildMessage(formatting, tokens ?? null),
+								buildExtra(formatting),
+							);
+						}
+					});
 				}
 			};
 
-			const responseMessage = await safeRespond();
-			if (!responseMessage) {
+			const { raw, tokensUsed, newHistory } = await answerChatMessage({
+				browser: ctx.browser,
+				history: [...(thread?.messages ?? []), ...inputMessages],
+				onAction,
+				preferences: ctx.chatPreferences,
+			});
+
+			if (ctx.chatPreferences.showLimit) {
+				await onAction("tokens", tokensUsed);
+			}
+
+			if (!responseMessageId) {
 				return;
 			}
 
@@ -179,19 +203,19 @@ messageController
 				threaded(buildAssistantMessage(raw)),
 			];
 
-			if (responseMessage.message_thread_id) {
+			if (responseMessageThreadId) {
 				if (!thread) {
 					thread = await createThread({
 						db: ctx.db,
 						chatId,
-						threadId: responseMessage.message_thread_id,
+						threadId: responseMessageThreadId,
 						messages: newMessages,
 					});
 				}
 				await updateThread({
 					db: ctx.db,
 					chatId,
-					threadId: responseMessage.message_thread_id,
+					threadId: responseMessageThreadId,
 					messages: newMessages,
 				});
 			}

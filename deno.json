@@ -3,6 +3,7 @@
 	"description": "Run local LLMs using ollama with Telegram Bot UI",
 	"tasks": {
 		"start": "deno run --env-file=.env -A src/index.ts",
+		"test": "deno run --env-file=.env.test -A src/index.ts",
 		"format": "deno run -A npm:@biomejs/biome format src/ --write; deno run -A npm:@biomejs/biome lint src/ --write"
 	},
 	"imports": {

@@ -36,7 +36,8 @@ const preferenceResponses = {
 preferencesController
 	.chatType(["group", "supergroup"])
 	.command("ai", async (ctx) => {
-		const [field, value] = ctx.match.split(" ");
+		const [field, ..._value] = ctx.match.split(" ");
+		const value = _value?.join(" ");
 		if (!(field in preferenceResponses)) {
 			await ctx.reply(`Invalid field: ${field}`);
 			return;
