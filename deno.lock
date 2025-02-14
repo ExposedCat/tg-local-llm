@@ -3,7 +3,6 @@
   "specifiers": {
     "npm:@biomejs/biome@*": "1.9.4",
     "npm:mongodb@*": "6.13.0",
-    "npm:ollama@~0.5.13": "0.5.13",
     "npm:puppeteer@^24.2.0": "24.2.0_devtools-protocol@0.0.1402036"
   },
   "npm": {
@@ -370,12 +369,6 @@
     "netmask@2.0.2": {
       "integrity": "sha512-dBpDMdxv9Irdq66304OLfEmQ9tbNRFnFTuZiLo+bD+r332bBmMJ8GBLXklIXXgxd3+v9+KUnZaUR5PJMa75Gsg=="
     },
-    "ollama@0.5.13": {
-      "integrity": "sha512-qK3eE2GjMYjCiTknEJfAHjbUzUqgVtf9qtzjxWrkwBZgBG7kOB6Z4+Ov4fbvDjmKKHv+rpuTsWFg4jZvVjNBtQ==",
-      "dependencies": [
-        "whatwg-fetch"
-      ]
-    },
     "once@1.4.0": {
       "integrity": "sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==",
       "dependencies": [
@@ -575,9 +568,6 @@
     },
     "webidl-conversions@7.0.0": {
       "integrity": "sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g=="
-    },
-    "whatwg-fetch@3.6.20": {
-      "integrity": "sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg=="
     },
     "whatwg-url@14.1.0": {
       "integrity": "sha512-jlf/foYIKywAt3x/XWKZ/3rz8OSJPiWktjmk891alJUEjiVxKX9LEO92qH3hv4aJ0mN3MWPvGMCy8jQi95xK4w==",
@@ -873,7 +863,6 @@
   "workspace": {
     "dependencies": [
       "npm:mongodb@*",
-      "npm:ollama@~0.5.13",
       "npm:puppeteer@^24.2.0"
     ]
   }

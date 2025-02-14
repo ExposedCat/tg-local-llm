@@ -1,6 +1,6 @@
 import type { Browser } from "puppeteer";
 import { scrapePage } from "../browser.ts";
-import { generate } from "../ollama.ts";
+import { generate } from "../model.ts";
 import {
 	TOOL_GUIDE_END,
 	TOOL_GUIDE_START,

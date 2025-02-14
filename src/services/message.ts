@@ -1,10 +1,12 @@
-import type { Message, ToolCall } from "ollama";
-import type { ThreadMessage } from "../types/database.ts";
+import type { ChatPreferences, ThreadMessage } from "../types/database.ts";
+import type { Message } from "./model.ts";
 import {
 	MESSAGE_END,
 	MESSAGE_START,
 	METADATA_END,
 	METADATA_START,
+	type ToolDefinition,
+	buildSystemPrompt,
 } from "./prompt.ts";
 
 export type BuildUserMessageArgs = {
@@ -13,15 +15,15 @@ export type BuildUserMessageArgs = {
 	images: string[];
 };
 
-export function buildAssistantMessage(
+export function buildMessage(
+	role: "system" | "assistant",
 	response: string,
-	toolCalls?: ToolCall[],
+	images?: string[],
 ): Message {
 	return {
-		role: "assistant",
+		role,
 		content: response,
-		images: [],
-		tool_calls: toolCalls ?? [],
+		images: images ?? [],
 	};
 }
 
@@ -30,30 +32,27 @@ export function buildUserMessage({
 	senderName,
 	images,
 }: BuildUserMessageArgs): Message {
-	const field = (name: string, content: string) =>
-		`\n<${name}>${content}</${name}>`;
-
+	const metadata = `${METADATA_START}\nName: ${senderName}\nDate: ${new Date().toLocaleString()}\n${METADATA_END}`;
+	const messageContent = `${MESSAGE_START}\n${message}\n${MESSAGE_END}`;
 	return {
 		role: "user",
-		content: `${METADATA_START}${field("from", senderName)}${field(
-			"message_date",
-			new Date().toLocaleString(),
-		)}\n${METADATA_END}\n${MESSAGE_START}\n${message}\n${MESSAGE_END}`,
+		content: `${metadata}\n${messageContent}`,
 		images,
 	};
 }
 
-export const threaded = (
-	{ tool_calls, ...message }: Message,
-	fromId?: number,
-) =>
+export const threaded = (message: Message, fromId?: number) =>
 	({
 		...message,
-		toolCalls: tool_calls,
 		fromId: fromId ?? -1,
 	}) as ThreadMessage;
 
 export const buildHistory = (
-	systemPrompt: string,
 	messages: Message[],
-): Message[] => [{ role: "system", content: systemPrompt }, ...messages];
+	tools: ToolDefinition[],
+	preferences: ChatPreferences,
+	systemPrompt?: string,
+): Message[] => [
+	buildMessage("system", systemPrompt ?? buildSystemPrompt(tools, preferences)),
+	...messages,
+];

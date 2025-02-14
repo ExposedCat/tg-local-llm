@@ -1,7 +1,7 @@
 
 #!/bin/bash
 
-DESCRIPTION="$(echo "${2:-TG Ollama Service}" | sed 's/\//\\\//g')"
+DESCRIPTION="$(echo "${2:-TG LLM Service}" | sed 's/\//\\\//g')"
 DIR="$(echo "$PWD" | sed 's/\//\\\//g')"
 SERVICE="$HOME/.local/share/systemd/user/$1.service"
 

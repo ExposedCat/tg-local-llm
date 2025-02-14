@@ -3,8 +3,8 @@ import { answerChatMessage } from "../services/chat.ts";
 import { downloadFile } from "../services/download.ts";
 import { escapeInputMessage, markdownToHtml } from "../services/formatting.ts";
 import {
-	buildAssistantMessage,
 	buildUserMessage,
+	buildMessage,
 	threaded,
 } from "../services/message.ts";
 import { NAMES } from "../services/prompt.ts";
@@ -28,7 +28,7 @@ type ActionMapper = {
 	get_text_contents: () => string;
 	message: () => string;
 	tokens: () => number;
-	images: () => string | null;
+	addImage: () => string;
 };
 
 export const messageController = new Composer<DefaultContext>();
@@ -113,7 +113,10 @@ messageController
 			let responseMessageId: number | null = null;
 			let responseMessageThreadId: number | null = null;
 
-			const buildMessage = (formatting: boolean, tokens: number | null) => {
+			const buildResponseMessage = (
+				formatting: boolean,
+				tokens: number | null,
+			) => {
 				const limit =
 					ctx.chatPreferences.showLimit && tokens !== null
 						? `\n\n${formatting ? "<i>" : ""}Message limit${
@@ -147,14 +150,14 @@ messageController
 							arg ? new URL(arg as string).host : "web page"
 						}</a>...`,
 					message: () => arg as string,
+					addImage: () => arg as string,
 					tokens: () => arg as number,
-					images: () => (arg as string).split(",").at(0) ?? null,
 				};
 				const processed = actionLabels[action as keyof ActionMapper]?.();
 				if (processed) {
 					if (action === "message") {
 						messageText = processed as string;
-					} else if (action === "images") {
+					} else if (action === "addImage") {
 						image = processed as string | null;
 					} else if (action === "tokens") {
 						tokens = processed as number;
@@ -165,7 +168,7 @@ messageController
 					await booleanToggle(async (formatting) => {
 						if (!responseMessageId) {
 							const message = await ctx.reply(
-								buildMessage(formatting, tokens ?? null),
+								buildResponseMessage(formatting, tokens ?? null),
 								buildExtra(formatting),
 							);
 							responseMessageId = message.message_id;
@@ -174,7 +177,7 @@ messageController
 							await ctx.api.editMessageText(
 								ctx.chat.id,
 								responseMessageId,
-								buildMessage(formatting, tokens ?? null),
+								buildResponseMessage(formatting, tokens ?? null),
 								buildExtra(formatting),
 							);
 						}
@@ -182,15 +185,19 @@ messageController
 				}
 			};
 
-			const { raw, tokensUsed, newHistory } = await answerChatMessage({
+			const { response, newHistory } = await answerChatMessage({
 				browser: ctx.browser,
 				history: [...(thread?.messages ?? []), ...inputMessages],
 				onAction,
 				preferences: ctx.chatPreferences,
 			});
 
+			if (response.image) {
+				await onAction("addImage", response.image);
+			}
+
 			if (ctx.chatPreferences.showLimit) {
-				await onAction("tokens", tokensUsed);
+				await onAction("tokens", response.tokensUsed);
 			}
 
 			if (!responseMessageId) {
@@ -200,7 +207,7 @@ messageController
 			const newMessages: ThreadMessage[] = [
 				...inputMessages,
 				...newHistory,
-				threaded(buildAssistantMessage(raw)),
+				threaded(buildMessage("assistant", response.raw)),
 			];
 
 			if (responseMessageThreadId) {

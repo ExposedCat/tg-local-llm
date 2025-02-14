@@ -1,21 +1,17 @@
-import type { ChatResponse, Message, Tool } from "ollama";
-
 import type { Browser } from "puppeteer";
-import type { Chat, ThreadMessage } from "../types/database.ts";
+import type {
+	Chat,
+	ChatPreferences,
+	ThreadMessage,
+} from "../types/database.ts";
 import { validateURL } from "./formatting.ts";
-import { buildHistory, threaded } from "./message.ts";
-import { generate, parseResponse } from "./ollama.ts";
+import { threaded } from "./message.ts";
+import { type GenerateResponse, type Message, generate } from "./model.ts";
 import {
-	IMAGES_END,
-	IMAGES_START,
-	MESSAGE_END,
-	MESSAGE_START,
-	// THOUGHTS_END,
-	// THOUGHTS_START,
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
+	type ToolDefinition,
 	URL_INVALID_PROMPT,
-	makeSystemPrompt,
 } from "./prompt.ts";
 import {
 	callGetContentsTool,
@@ -32,45 +28,41 @@ export type RespondArgs = {
 
 const TOOL_USE_LIMIT = 5;
 const TOOLS = [searchTool, getContentsTool];
-const TOOL_MAP: Record<string, Tool[]> = {
+const TOOL_MAP: Record<string, ToolDefinition[] | undefined> = {
 	search_web: [getContentsTool],
 	get_text_contents: [],
 };
 
 async function processResponse(
-	response: ChatResponse,
+	response: GenerateResponse,
 	browser: Browser,
 	history: (ThreadMessage | Message)[],
 	onAction: RespondArgs["onAction"],
-	systemPrompt: string,
+	preferences: ChatPreferences,
 	_usage = 0,
 ) {
-	let {
-		message: finalMessage,
-		images: finalImages,
-		tokensUsed: finalTokensUsed,
-	} = parseResponse(response);
+	let finalResponse = response;
+	const toolCall = response.tool;
 
 	let toolResponse: string | null = null;
 	const newHistory: ThreadMessage[] = [];
 
-	const toolCall = response.message.tool_calls?.at(0);
 	const usage = _usage + 1;
 
 	if (usage > TOOL_USE_LIMIT && toolCall) {
 		toolResponse = TOOL_LIMIT_PROMPT;
 	} else {
-		if (toolCall?.function.name === "search_web") {
-			const query = toolCall.function.arguments.query ?? "<empty>";
-			const category = toolCall.function.arguments.category ?? "text";
+		if (toolCall?.name === "search_web") {
+			const query = toolCall.parameters.query?.toString() ?? "<empty>";
+			const category = toolCall.parameters.category?.toString() ?? "text";
 			const action = category === "image" ? "image_search" : "web_search";
 			await onAction?.(action, query);
 			const response = await callWebSearchTool(query, category);
 			toolResponse = response;
-		} else if (toolCall?.function.name === "get_text_contents") {
-			const arg = validateURL(toolCall?.function.arguments.url);
+		} else if (toolCall?.name === "get_text_contents") {
+			const arg = validateURL(`${toolCall.parameters.url}`);
 			if (arg) {
-				await onAction?.(toolCall.function.name, arg);
+				await onAction?.(toolCall.name, arg);
 				const response = await callGetContentsTool(browser, arg);
 				toolResponse = response;
 			} else {
@@ -88,36 +80,28 @@ async function processResponse(
 		};
 		history.push(toolResponseEntry);
 		newHistory.push(threaded(toolResponseEntry));
-		const {
-			response: actualResponse,
-			images: actualImages,
-			message: actualMessage,
-			tokensUsed: actualTokensUsed,
-		} = await generate({
-			messages: buildHistory(systemPrompt, history),
-			tools: TOOL_MAP[toolCall?.function.name ?? ""] ?? TOOLS,
+		const actualResponse = await generate({
+			messages: history,
+			tools: TOOL_MAP[toolCall?.name ?? ""] ?? TOOLS,
+			preferences,
 			onResponsePartial: (kind, chunk) => onAction?.(kind, chunk),
 		});
-		if (!actualMessage) {
+		if (actualResponse.tool) {
 			return processResponse(
 				actualResponse,
 				browser,
 				history,
 				onAction,
-				systemPrompt,
+				preferences,
 				usage,
 			);
 		}
-		finalMessage = actualMessage;
-		finalImages = actualImages;
-		finalTokensUsed = actualTokensUsed;
+		finalResponse = actualResponse;
 	}
 
 	return {
 		newHistory,
-		message: finalMessage,
-		images: finalImages,
-		tokensUsed: finalTokensUsed,
+		response: finalResponse,
 	};
 }
 
@@ -127,35 +111,18 @@ export async function answerChatMessage({
 	preferences,
 	onAction,
 }: RespondArgs) {
-	const systemPrompt = makeSystemPrompt(
-		preferences.nsfw,
-		preferences.extremeState,
-	);
-	const { response } = await generate({
-		messages: buildHistory(systemPrompt, history),
+	const response = await generate({
+		messages: history,
 		tools: TOOLS,
+		preferences,
 		onResponsePartial: (kind, chunk) => onAction?.(kind, chunk),
 	});
 
-	const { message, images, tokensUsed, newHistory } = await processResponse(
+	return await processResponse(
 		response,
 		browser,
 		history,
 		onAction,
-		systemPrompt,
+		preferences,
 	);
-
-	return {
-		raw: `${MESSAGE_START}
-		${message}
-		${MESSAGE_END}
-		${IMAGES_START}
-		${images.join(",")}
-		${IMAGES_END}`,
-		images,
-		tokensUsed,
-		// thoughts,
-		message,
-		newHistory,
-	};
 }

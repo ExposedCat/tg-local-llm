@@ -1,5 +1,4 @@
 import type { Browser } from "puppeteer";
-import ollama from "ollama";
 import { validateEnv } from "../helpers/validate-env.ts";
 import { startBrowser } from "../services/browser.ts";
 import type { Database } from "../types/database.ts";
@@ -39,7 +38,7 @@ export async function startApp() {
 
 	return async () => {
 		await browser.close();
-		ollama.abort();
+		// TODO: Abort generations
 		Deno.exit(0);
 	};
 }
