@@ -1,5 +1,11 @@
-import type { Tool } from "ollama";
-import { IMAGES_START } from "../prompt.ts";
+import {
+	IMAGE_START,
+	TOOL_GUIDE_END,
+	TOOL_GUIDE_START,
+	TOOL_RESPONSE_END,
+	TOOL_RESPONSE_START,
+	type ToolDefinition,
+} from "../prompt.ts";
 
 type SearchEntry = {
 	url: string;
@@ -29,11 +35,9 @@ type SearchWebResponse =
 			result: null;
 	  };
 
-export const SEARCH_WEB_PREFIX = "[Your Web Browser: URL Results]";
-
 async function searchWeb(
 	query: string,
-	category: "text" | "image",
+	category: string,
 ): Promise<SearchWebResponse> {
 	const uri = `${Deno.env.get("SEARXNG_URL") ?? ""}${
 		category === "image" ? "&categories=images" : ""
@@ -59,75 +63,67 @@ async function searchWeb(
 	}
 }
 
-export async function callWebSearchTool(
-	query: string,
-	category: "text" | "image" = "text",
-) {
+export async function callWebSearchTool(query: string, category = "text") {
 	const { ok, error, result } = await searchWeb(query, category);
-	if (!ok) {
-		return `Search Web failed: ${error}`;
-	}
-	const resultList = result
-		.slice(0, 5)
-		.map((entry) => {
-			const source = `${
-				category === "text" ? "url" : "source"
-			}=\`${entry.url}\``;
-			const rawTitle =
-				category === "text"
-					? entry.title
-					: `${entry.title} (${entry.content ?? "no description"})`;
-			const title = `,title=\`${rawTitle}\``;
-			const image =
+	const resultList = ok
+		? result
+				.slice(0, 5)
+				.map((entry) => {
+					const source = `${
+						category === "text" ? "url" : "source"
+					}=\`${entry.url}\``;
+					const rawTitle =
+						category === "text"
+							? entry.title
+							: `${entry.title} (${entry.content ?? "no description"})`;
+					const title = `,title=\`${rawTitle}\``;
+					const image =
+						category === "image"
+							? `,image_url=\`${entry.image ?? "unknown"}\``
+							: "";
+					return `- ${source}${title}${image}`;
+				})
+				.join("\n")
+		: `Search Web failed: ${error}.`;
+
+	const prefix = ok
+		? `Based on user request, select the most relevant ${
+				category === "image" ? "image" : "URL"
+			} from this list based on descriptions${
 				category === "image"
-					? `,image_url=\`${entry.image ?? "unknown"}\``
-					: "";
-			return `- ${source}${title}${image}`;
-		})
-		.join("\n");
+					? ""
+					: ". Select only URL which describes information you need to respond to the last user message"
+			}: `
+		: "";
+	const postfix = ok
+		? `${
+				category === "text"
+					? "Use get_text_contents tool to read the most relevant URL."
+					: `You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in a ${IMAGE_START} section`
+			}. Note that this ${
+				category === "image" ? "source" : "URL"
+			} list is supplied by your internal Web Browser, not user, so don't ask user which ${
+				category === "image" ? "source" : "URL"
+			} to use, pick one yourself based on title relevancy.`
+		: "Try again or tell user the error you got with your web search";
 
-	const prefix = `${SEARCH_WEB_PREFIX} Based on user request, select the most relevant ${
-		category === "image" ? "image" : "URL"
-	} from this list based on descriptions${
-		category === "image"
-			? ""
-			: ". Select only URL which describes information you need to respond to the last user message"
-	}`;
-	const postfix = `${
-		category === "text"
-			? "Use get_text_contents to read the most relevant URL"
-			: `You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in a ${IMAGES_START} section`
-	}. Note that this ${
-		category === "image" ? "source" : "URL"
-	} list is supplied by your internal Web Browser, not user, so don't ask user which ${
-		category === "image" ? "source" : "URL"
-	} to use, pick one yourself based on title relevancy.`;
-
-	return `${prefix}: \`\`\`
-	${resultList}
-	\`\`\`.
-	${postfix}`;
+	return `${TOOL_RESPONSE_START}\n${prefix}\`\`\`\n${resultList}\n\`\`\`\n${TOOL_RESPONSE_END}\n${TOOL_GUIDE_START}\n${postfix}\n${TOOL_GUIDE_END}`;
 }
 
-export const searchTool: Tool = {
-	type: "function",
-	function: {
-		name: "search_web",
-		description:
-			'Search the Internet for unknown knowledge, news, info, public contact info, weather, realtime data, etc. Always use this when you are asked about some recent events or updates. Don\'t ask user for specific search terms. For image search set category to "image"',
-		parameters: {
-			type: "object",
-			properties: {
-				query: {
-					type: "string",
-					description: "Search query",
-				},
-				category: {
-					type: "string",
-					description: 'Can only be "text" or "image"',
-				},
-			},
-			required: ["query", "category"],
+export const searchTool: ToolDefinition = {
+	name: "search_web",
+	description:
+		"Perform a web search. Use this when you need to find some realtime or recent information, for some knowledge, weather, people, news, events, etc.",
+	parameters: [
+		{
+			name: "query",
+			type: "string",
+			description: "Query to search for.",
 		},
-	},
+		{
+			name: "category",
+			type: "string",
+			description: 'Search category. Can only be "text" or "image".',
+		},
+	],
 };
