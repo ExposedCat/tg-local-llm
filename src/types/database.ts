@@ -14,7 +14,7 @@ export type Thread = {
 };
 
 export type ChatPreferences = {
-	nsfw: boolean;
+	nsfw?: boolean;
 	extremeState?: string;
 	showLimit?: boolean;
 };

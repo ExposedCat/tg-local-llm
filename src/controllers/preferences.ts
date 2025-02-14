@@ -1,6 +1,6 @@
 import { Composer } from "grammy";
 import { setChatPreferences } from "../services/database.ts";
-import { MAIN_NAME } from "../services/prompt.ts";
+import { MAIN_NAME } from "../services/model/prompt.ts";
 import type { DefaultContext } from "../types/context.ts";
 import type { Chat } from "../types/database.ts";
 

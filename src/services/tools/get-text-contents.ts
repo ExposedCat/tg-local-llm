@@ -1,13 +1,8 @@
 import type { Browser } from "puppeteer";
 import { scrapePage } from "../browser.ts";
-import { generate } from "../model.ts";
-import {
-	TOOL_GUIDE_END,
-	TOOL_GUIDE_START,
-	TOOL_RESPONSE_END,
-	TOOL_RESPONSE_START,
-	type ToolDefinition,
-} from "../prompt.ts";
+import { generate } from "../model/api.ts";
+import type { ToolDefinition } from "../model/types.ts";
+import { buildToolResponse } from "./utils.ts";
 
 export async function callGetContentsTool(browser: Browser, url: string) {
 	let content: string;
@@ -18,9 +13,7 @@ export async function callGetContentsTool(browser: Browser, url: string) {
 	}
 
 	const { unprocessed: summary } = await generate({
-		tools: [],
-		preferences: { nsfw: false },
-		systemPrompt:
+		toolPrompt:
 			"Given raw website contents, write a concise and structured summary without missing anything important. Ignore metadata irrelevant to the page topic.",
 		messages: [
 			{
@@ -31,10 +24,10 @@ export async function callGetContentsTool(browser: Browser, url: string) {
 	});
 
 	const prefix = `Contents of the website "${url}": `;
-	const postfix =
+	const guide =
 		"Use this extra knowledge from your web search to answer to the last user message in the chat. Respond with actual answer, don't say \"let's search\" or anything like that. Consider adding a source hyperlink.";
 
-	return `${TOOL_RESPONSE_START}\n${prefix}\`\`\`\n${summary}\n\`\`\`\n${TOOL_RESPONSE_END}\n${TOOL_GUIDE_START}\n${postfix}\n${TOOL_GUIDE_END}`;
+	return buildToolResponse(prefix, summary, guide);
 }
 
 export const getContentsTool: ToolDefinition = {

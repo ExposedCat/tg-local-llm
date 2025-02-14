@@ -5,14 +5,14 @@ import type {
 	ThreadMessage,
 } from "../types/database.ts";
 import { validateURL } from "./formatting.ts";
-import { threaded } from "./message.ts";
-import { type GenerateResponse, type Message, generate } from "./model.ts";
+import { type GenerateResponse, generate } from "./model/api.ts";
+import { threaded } from "./model/message.ts";
 import {
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
-	type ToolDefinition,
 	URL_INVALID_PROMPT,
-} from "./prompt.ts";
+} from "./model/prompt.ts";
+import type { Message, ToolDefinition } from "./model/types.ts";
 import {
 	callGetContentsTool,
 	getContentsTool,
@@ -84,7 +84,7 @@ async function processResponse(
 			messages: history,
 			tools: TOOL_MAP[toolCall?.name ?? ""] ?? TOOLS,
 			preferences,
-			onResponsePartial: (kind, chunk) => onAction?.(kind, chunk),
+			onChunk: (kind, chunk) => onAction?.(kind, chunk),
 		});
 		if (actualResponse.tool) {
 			return processResponse(
@@ -115,7 +115,7 @@ export async function answerChatMessage({
 		messages: history,
 		tools: TOOLS,
 		preferences,
-		onResponsePartial: (kind, chunk) => onAction?.(kind, chunk),
+		onChunk: (kind, chunk) => onAction?.(kind, chunk),
 	});
 
 	return await processResponse(

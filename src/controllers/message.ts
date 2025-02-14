@@ -3,11 +3,11 @@ import { answerChatMessage } from "../services/chat.ts";
 import { downloadFile } from "../services/download.ts";
 import { escapeInputMessage, markdownToHtml } from "../services/formatting.ts";
 import {
-	buildUserMessage,
 	buildMessage,
+	buildUserMessage,
 	threaded,
-} from "../services/message.ts";
-import { NAMES } from "../services/prompt.ts";
+} from "../services/model/message.ts";
+import { NAMES } from "../services/model/prompt.ts";
 import { createThread, getThread, updateThread } from "../services/thread.ts";
 import type { DefaultContext } from "../types/context.ts";
 import type { ThreadMessage } from "../types/database.ts";
@@ -140,18 +140,18 @@ messageController
 
 			const onAction = async (
 				action: string,
-				arg?: string | number | string[],
+				value?: string | number | string[],
 			) => {
 				const actionLabels: ActionMapper = {
-					web_search: () => `Searching "${arg}"...`,
-					image_search: () => `Searching "${arg}" (images)...`,
+					web_search: () => `Searching "${value}"...`,
+					image_search: () => `Searching "${value}" (images)...`,
 					get_text_contents: () =>
-						`Reading <a href="${arg}">${
-							arg ? new URL(arg as string).host : "web page"
+						`Reading <a href="${value}">${
+							value ? new URL(value as string).host : "web page"
 						}</a>...`,
-					message: () => arg as string,
-					addImage: () => arg as string,
-					tokens: () => arg as number,
+					message: () => value as string,
+					addImage: () => value as string,
+					tokens: () => value as number,
 				};
 				const processed = actionLabels[action as keyof ActionMapper]?.();
 				if (processed) {

@@ -1,13 +1,12 @@
-import type { ChatPreferences, ThreadMessage } from "../types/database.ts";
-import type { Message } from "./model.ts";
+import type { ChatPreferences, ThreadMessage } from "../../types/database.ts";
 import {
 	MESSAGE_END,
 	MESSAGE_START,
 	METADATA_END,
 	METADATA_START,
-	type ToolDefinition,
 	buildSystemPrompt,
 } from "./prompt.ts";
+import type { Message, ToolDefinition } from "./types.ts";
 
 export type BuildUserMessageArgs = {
 	message: string;
@@ -50,9 +49,12 @@ export const threaded = (message: Message, fromId?: number) =>
 export const buildHistory = (
 	messages: Message[],
 	tools: ToolDefinition[],
-	preferences: ChatPreferences,
+	preferences: ChatPreferences | null,
 	systemPrompt?: string,
 ): Message[] => [
-	buildMessage("system", systemPrompt ?? buildSystemPrompt(tools, preferences)),
+	buildMessage(
+		"system",
+		systemPrompt ?? buildSystemPrompt(tools, preferences ?? {}),
+	),
 	...messages,
 ];

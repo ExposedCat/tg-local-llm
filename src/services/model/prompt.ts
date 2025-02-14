@@ -1,5 +1,6 @@
-import type { ChatPreferences } from "../types/database.ts";
-import { firstUpperCase } from "./formatting.ts";
+import type { ChatPreferences } from "../../types/database.ts";
+import { firstUpperCase } from "../formatting.ts";
+import type { ToolDefinition } from "./types.ts";
 
 export const TAG_WRAPPER = "σ̌";
 
@@ -24,16 +25,6 @@ export const NAMES = (Deno.env.get("NAMES")!.trim() || "laylo")
 	.map((name) => name.trim().toLowerCase());
 
 export const MAIN_NAME = firstUpperCase(NAMES[0]);
-
-export type ToolDefinition = {
-	name: string;
-	description: string;
-	parameters: {
-		name: string;
-		description: string;
-		type: string;
-	}[];
-};
 
 export const buildSystemPrompt = (
 	tools: ToolDefinition[],

@@ -1,11 +1,11 @@
 
 #!/bin/bash
 
-DESCRIPTION="$(echo "${2:-TG LLM Service}" | sed 's/\//\\\//g')"
+DESCRIPTION="$(echo "${2:-TG Local LLM Service}" | sed 's/\//\\\//g')"
 DIR="$(echo "$PWD" | sed 's/\//\\\//g')"
 SERVICE="$HOME/.local/share/systemd/user/$1.service"
 
-cp tg-ollama.service $SERVICE
+cp tg-local-llm.service $SERVICE
 sed -i "s/\$DESCRIPTION/$DESCRIPTION/g" $SERVICE
 sed -i "s/\$USER/$USER/g" $SERVICE
 sed -i "s/\$DIR/$DIR/g" $SERVICE

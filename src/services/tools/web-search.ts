@@ -1,11 +1,6 @@
-import {
-	IMAGE_START,
-	TOOL_GUIDE_END,
-	TOOL_GUIDE_START,
-	TOOL_RESPONSE_END,
-	TOOL_RESPONSE_START,
-	type ToolDefinition,
-} from "../prompt.ts";
+import { IMAGE_START } from "../model/prompt.ts";
+import type { ToolDefinition } from "../model/types.ts";
+import { buildToolResponse } from "./utils.ts";
 
 type SearchEntry = {
 	url: string;
@@ -95,7 +90,7 @@ export async function callWebSearchTool(query: string, category = "text") {
 					: ". Select only URL which describes information you need to respond to the last user message"
 			}: `
 		: "";
-	const postfix = ok
+	const guide = ok
 		? `${
 				category === "text"
 					? "Use get_text_contents tool to read the most relevant URL."
@@ -107,7 +102,7 @@ export async function callWebSearchTool(query: string, category = "text") {
 			} to use, pick one yourself based on title relevancy.`
 		: "Try again or tell user the error you got with your web search";
 
-	return `${TOOL_RESPONSE_START}\n${prefix}\`\`\`\n${resultList}\n\`\`\`\n${TOOL_RESPONSE_END}\n${TOOL_GUIDE_START}\n${postfix}\n${TOOL_GUIDE_END}`;
+	return buildToolResponse(prefix, resultList, guide);
 }
 
 export const searchTool: ToolDefinition = {
