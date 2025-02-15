@@ -93,14 +93,14 @@ export async function callWebSearchTool(query: string, category = "text") {
 	const guide = ok
 		? `${
 				category === "text"
-					? "Use get_text_contents tool to read the most relevant URL."
+					? "Now you must use get_text_contents tool to read the most relevant URL."
 					: `You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in a ${IMAGE_START} section`
 			}. Note that this ${
 				category === "image" ? "source" : "URL"
 			} list is supplied by your internal Web Browser, not user, so don't ask user which ${
 				category === "image" ? "source" : "URL"
 			} to use, pick one yourself based on title relevancy.`
-		: "Try again or tell user the error you got with your web search";
+		: "Tell user the error you got with your web search";
 
 	return buildToolResponse(prefix, resultList, guide);
 }

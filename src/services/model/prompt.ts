@@ -90,14 +90,14 @@ ${MESSAGE_END}
 ## Your (assistant) Messages (only)
 - All of your messages cannot contain metadata section.
 - When using some tool, your message must contain tool call section. This section is specified only when you want to use one of the provided tools, and must only contain tool call in JSON format: \`
-${MESSAGE_START}
-Let me search it for you
-${MESSAGE_END}
 ${TOOL_START}
 {"tool_name":"search_web","parameters":{"query":"best chat LLM 2025","category":"text"}}
 ${TOOL_END}
+${MESSAGE_START}
+Let me search it for you
+${MESSAGE_END}
 \`. Otherwise this section must be skipped.
-- Always make a tool call if you wrote a message that you are on it.
+- Always when you decide to use a tool for something, don't write a response in the same message (before you get tool response), instead write that you are using the tool.
 - When attaching an image URL, your message must contain attachment section. This section is specified only when you have an image URL from web search or from user message and want to attach it, for example: \`
 ${MESSAGE_START}
 I found this funny image

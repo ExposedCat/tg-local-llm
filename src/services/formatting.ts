@@ -3,7 +3,7 @@ import {
 	MESSAGE_START,
 	METADATA_END,
 	METADATA_START,
-} from "./prompt.ts";
+} from "./model/prompt.ts";
 
 function makeHeader(input: string) {
 	const unicodeMap: Record<string, string> = {

@@ -113,17 +113,23 @@ messageController
 			let responseMessageId: number | null = null;
 			let responseMessageThreadId: number | null = null;
 
+			const makeNote = (content: string, formatting: boolean) =>
+				`\n\n${formatting ? `<i>${content}</i>` : content}`;
+
 			const buildResponseMessage = (
 				formatting: boolean,
+				finished: boolean | null,
 				tokens: number | null,
 			) => {
+				const actions = `${formatting ? "<blockquote expandable>" : ""}${actionText.trim()}${formatting ? "</blockquote>" : ""}`;
 				const limit =
 					ctx.chatPreferences.showLimit && tokens !== null
-						? `\n\n${formatting ? "<i>" : ""}Message limit${
-								formatting ? "</i>" : ""
-							}: ${((tokens / Number(Deno.env.get("CONTEXT"))) * 100).toFixed(1)}%`
+						? `${makeNote("Message limit", formatting)}: ${((tokens / Number(Deno.env.get("CONTEXT"))) * 100).toFixed(1)}%`
 						: "";
-				return `${formatting ? "<blockquote expandable>" : ""}${actionText.trim()}${formatting ? "</blockquote>" : ""}\n\n${formatting ? markdownToHtml(messageText) : messageText}${limit}`;
+				const state = finished ? "" : makeNote("Typing...", formatting);
+				const note = `${limit}${state}`;
+				const message = `${formatting ? markdownToHtml(messageText) : messageText}`;
+				return `${actions}\n\n${message}${note}`;
 			};
 
 			const buildExtra = (formatting: boolean) =>
@@ -154,32 +160,39 @@ messageController
 					tokens: () => value as number,
 				};
 				const processed = actionLabels[action as keyof ActionMapper]?.();
-				if (processed) {
+				if (processed || action === "finish") {
 					if (action === "message") {
 						messageText = processed as string;
-					} else if (action === "addImage") {
-						image = processed as string | null;
-					} else if (action === "tokens") {
-						tokens = processed as number;
-					} else {
+					} else if (action !== "finish") {
 						actionText += `\n${processed}`;
 					}
 
 					await booleanToggle(async (formatting) => {
+						const messageText = buildResponseMessage(
+							formatting,
+							action === "finish",
+							tokens ?? null,
+						);
 						if (!responseMessageId) {
 							const message = await ctx.reply(
-								buildResponseMessage(formatting, tokens ?? null),
+								messageText,
 								buildExtra(formatting),
 							);
 							responseMessageId = message.message_id;
 							responseMessageThreadId = message.message_thread_id ?? null;
 						} else {
-							await ctx.api.editMessageText(
-								ctx.chat.id,
-								responseMessageId,
-								buildResponseMessage(formatting, tokens ?? null),
-								buildExtra(formatting),
-							);
+							try {
+								await ctx.api.editMessageText(
+									ctx.chat.id,
+									responseMessageId,
+									messageText,
+									buildExtra(formatting),
+								);
+							} catch (error) {
+								if (!formatting) {
+									console.error("Failed to edit message:", error);
+								}
+							}
 						}
 					});
 				}
@@ -193,11 +206,14 @@ messageController
 			});
 
 			if (response.image) {
-				await onAction("addImage", response.image);
+				image = response.image;
+			}
+			if (ctx.chatPreferences.showLimit) {
+				tokens = response.tokensUsed;
 			}
 
-			if (ctx.chatPreferences.showLimit) {
-				await onAction("tokens", response.tokensUsed);
+			if (response.message || ctx.chatPreferences.showLimit) {
+				await onAction("finish");
 			}
 
 			if (!responseMessageId) {

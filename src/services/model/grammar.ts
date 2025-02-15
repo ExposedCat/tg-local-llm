@@ -9,7 +9,7 @@ import {
 } from "./prompt.ts";
 
 export const grammar =
-	() => `root ::= (sec-message) | (sec-tool) | (sec-message sec-tool) | (sec-message sec-attachment) | (sec-message sec-tool sec-attachment)
+	() => `root ::= (sec-message) | (sec-tool) | (sec-tool sec-message) | (sec-message sec-attachment) | (sec-tool sec-message sec-attachment)
 
 par-any ::= ([^${TAG_WRAPPER}]+)
 par-string ::= ("\\"" par-any "\\"")
@@ -17,7 +17,7 @@ par-name ::= ([a-z_]+)
 par-number ::= ([0-9]+)
 par-url ::= ("http" par-any)
 
-sec-message ::= "${MESSAGE_START}\nHey, " par-any "\n${MESSAGE_END}\n"
+sec-message ::= "${MESSAGE_START}\n" par-any "\n${MESSAGE_END}\n"
 
 par-s-param ::= "\\"" par-name "\\":" (par-string | par-number)*
 par-params ::= par-s-param ("," par-s-param)*
