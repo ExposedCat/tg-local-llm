@@ -10,4 +10,4 @@ ExecStart=/home/$USER/.deno/bin/deno task start
 Restart=never
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

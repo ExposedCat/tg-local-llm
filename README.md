@@ -56,7 +56,8 @@ The project was initiated out of enthusiasm to develop a single, fully local AI 
 
 ## Running
 - Use `deno task start` to run.
-- Use `sudo ./make-service.bash service_name service_description` to create SystemD Service for background running. Note that this doesn't include SearXNG and LLama.cpp setups.
+- Use `sudo ./make-service.bash service_name service_description` to create SystemD Service for background running (runs only tg-local-llm).
+- Use `sudo ./make-service.bash service_name service_description llamacpp_home model_path` to create SystemD Service for background running (runs only llamacpp server).
 
 ## Development / Adjustments
 - See `.env.example` for general adjustments

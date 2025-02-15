@@ -1,0 +1,14 @@
+[Unit]
+Description=$DESCRIPTION
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Environment="CUDA_VISIBLE_DEVICES=0"
+Type=simple
+WorkingDirectory=$DIR
+ExecStart=$LLAMACPP_HOME/llama-server --model $MODEL_PATH -ngl 49 --no-webui --port 8181 -mg 0 -c 20000
+Restart=never
+
+[Install]
+WantedBy=default.target
