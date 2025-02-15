@@ -4,7 +4,6 @@
 	"tasks": {
 		"start": "deno run --env-file=.env -A src/index.ts",
 		"test": "deno run --env-file=.env.test -A src/index.ts",
-		"dev": "deno run --env-file=.env.test -A src/index.ts --watch",
 		"format": "deno run -A npm:@biomejs/biome format src/ --write; deno run -A npm:@biomejs/biome lint src/ --write"
 	},
 	"imports": {
