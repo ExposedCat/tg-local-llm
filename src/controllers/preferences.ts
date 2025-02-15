@@ -37,6 +37,17 @@ preferencesController
 	.chatType(["group", "supergroup"])
 	.command("ai", async (ctx) => {
 		const [field, ..._value] = ctx.match.split(" ");
+		if (field === "") {
+			await ctx.reply(
+				`AI Preferences
+
+${ctx.chatPreferences.nsfw ? "🟢" : "🔴"} NSFW
+${ctx.chatPreferences.showLimit ? "🟢" : "🔴"} Display limit
+${ctx.chatPreferences.extremeState ? `🟢 Extremely ${ctx.chatPreferences.extremeState}` : "🔴 Normal state"}`,
+			);
+			return;
+		}
+
 		const value = _value?.join(" ");
 		if (!(field in preferenceResponses)) {
 			await ctx.reply(`Invalid field: ${field}`);
