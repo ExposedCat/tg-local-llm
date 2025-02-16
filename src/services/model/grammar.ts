@@ -9,10 +9,12 @@ import {
 	TOOL_START,
 } from "./prompt.ts";
 
-export const grammar =
-	() => `root ::= (sec-message) | (sec-tool) | (sec-tool sec-message) | (sec-message sec-attachment) | (sec-tool sec-message sec-attachment)
+const bannedCharacters = Deno.env.get("BAN_CHARACTERS") ?? "";
 
-par-any ::= ([^${TAG_WRAPPER_OPEN}${TAG_WRAPPER_CLOSE}]{1,5000})
+export const grammar = () =>
+	`root ::= (sec-message) | (sec-tool) | (sec-tool sec-message) | (sec-message sec-attachment) | (sec-tool sec-message sec-attachment)
+
+par-any ::= ([^${TAG_WRAPPER_OPEN}${TAG_WRAPPER_CLOSE}${bannedCharacters}]{1,5000})
 par-string ::= ("\\"" par-any "\\"")
 par-name ::= ([a-z_]+)
 par-number ::= ([0-9]+)
