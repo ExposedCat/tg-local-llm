@@ -3,7 +3,8 @@ import {
 	IMAGE_START,
 	MESSAGE_END,
 	MESSAGE_START,
-	TAG_WRAPPER,
+	TAG_WRAPPER_CLOSE,
+	TAG_WRAPPER_OPEN,
 	TOOL_END,
 	TOOL_START,
 } from "./prompt.ts";
@@ -11,7 +12,7 @@ import {
 export const grammar =
 	() => `root ::= (sec-message) | (sec-tool) | (sec-tool sec-message) | (sec-message sec-attachment) | (sec-tool sec-message sec-attachment)
 
-par-any ::= ([^${TAG_WRAPPER}]+)
+par-any ::= ([^${TAG_WRAPPER_OPEN}${TAG_WRAPPER_CLOSE}]{1,5000})
 par-string ::= ("\\"" par-any "\\"")
 par-name ::= ([a-z_]+)
 par-number ::= ([0-9]+)

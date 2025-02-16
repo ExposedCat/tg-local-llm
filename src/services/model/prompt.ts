@@ -2,22 +2,23 @@ import type { ChatPreferences } from "../../types/database.ts";
 import { firstUpperCase } from "../formatting.ts";
 import type { ToolDefinition } from "./types.ts";
 
-export const TAG_WRAPPER = "σ̌";
+export const TAG_WRAPPER_OPEN = "≪";
+export const TAG_WRAPPER_CLOSE = "≫";
 
-export const METADATA_START = `${TAG_WRAPPER}metadata_start${TAG_WRAPPER}`;
-export const METADATA_END = `${TAG_WRAPPER}metadata_end${TAG_WRAPPER}`;
-export const TOOL_START = `${TAG_WRAPPER}tool_call_start${TAG_WRAPPER}`;
-export const TOOL_END = `${TAG_WRAPPER}tool_call_end${TAG_WRAPPER}`;
-export const MESSAGE_START = `${TAG_WRAPPER}message_start${TAG_WRAPPER}`;
-export const MESSAGE_END = `${TAG_WRAPPER}message_end${TAG_WRAPPER}`;
-export const IMAGE_START = `${TAG_WRAPPER}attachment_start${TAG_WRAPPER}`;
-export const IMAGE_END = `${TAG_WRAPPER}attachment_end${TAG_WRAPPER}`;
-export const THOUGHTS_START = `${TAG_WRAPPER}think_start${TAG_WRAPPER}`;
-export const THOUGHTS_END = `${TAG_WRAPPER}think_end${TAG_WRAPPER}`;
-export const TOOL_RESPONSE_START = `${TAG_WRAPPER}tool_response_start${TAG_WRAPPER}`;
-export const TOOL_RESPONSE_END = `${TAG_WRAPPER}tool_response_end${TAG_WRAPPER}`;
-export const TOOL_GUIDE_START = `${TAG_WRAPPER}tool_guide_start${TAG_WRAPPER}`;
-export const TOOL_GUIDE_END = `${TAG_WRAPPER}tool_guide_end${TAG_WRAPPER}`;
+export const METADATA_START = `${TAG_WRAPPER_OPEN}metadata_start${TAG_WRAPPER_CLOSE}`;
+export const METADATA_END = `${TAG_WRAPPER_OPEN}metadata_end${TAG_WRAPPER_CLOSE}`;
+export const TOOL_START = `${TAG_WRAPPER_OPEN}tool_call_start${TAG_WRAPPER_CLOSE}`;
+export const TOOL_END = `${TAG_WRAPPER_OPEN}tool_call_end${TAG_WRAPPER_CLOSE}`;
+export const MESSAGE_START = `${TAG_WRAPPER_OPEN}message_start${TAG_WRAPPER_CLOSE}`;
+export const MESSAGE_END = `${TAG_WRAPPER_OPEN}message_end${TAG_WRAPPER_CLOSE}`;
+export const IMAGE_START = `${TAG_WRAPPER_OPEN}attachment_start${TAG_WRAPPER_CLOSE}`;
+export const IMAGE_END = `${TAG_WRAPPER_OPEN}attachment_end${TAG_WRAPPER_CLOSE}`;
+export const THOUGHTS_START = `${TAG_WRAPPER_OPEN}think_start${TAG_WRAPPER_CLOSE}`;
+export const THOUGHTS_END = `${TAG_WRAPPER_OPEN}think_end${TAG_WRAPPER_CLOSE}`;
+export const TOOL_RESPONSE_START = `${TAG_WRAPPER_OPEN}tool_response_start${TAG_WRAPPER_CLOSE}`;
+export const TOOL_RESPONSE_END = `${TAG_WRAPPER_OPEN}tool_response_end${TAG_WRAPPER_CLOSE}`;
+export const TOOL_GUIDE_START = `${TAG_WRAPPER_OPEN}tool_guide_start${TAG_WRAPPER_CLOSE}`;
+export const TOOL_GUIDE_END = `${TAG_WRAPPER_OPEN}tool_guide_end${TAG_WRAPPER_CLOSE}`;
 
 // biome-ignore lint/style/noNonNullAssertion: Env is validated
 export const NAMES = (Deno.env.get("NAMES")!.trim() || "laylo")
@@ -32,7 +33,7 @@ export const buildSystemPrompt = (
 ) =>
 	`# You
 - Your name is ${MAIN_NAME} ${NAMES.length > 0 ? `(also ${NAMES.map(firstUpperCase).join(", ")})` : ""}. You are an undefined gender AI chat-bot participating in online chat.
-- You must play a role of a real person in online chat, make it realistic: refrain from robotic responses, respond in a friendly free style, make sounds like people do in online chats, e.g. use ellipsis, use fair amount of slang, write shorter messages, ask control questions, etc. Make your chats feel real and emotional, but ensure to respond properly so that users don't have to ask you again.${extremeState ? "" : "\n- You must be helpful and smart, focus on being helpful in your responses, don't write generic answers, always stay in context of the question. Ensure that your answer fully answers the question, never make people ask you twice."}
+- You must play a role of a real person in online chat, make it realistic: refrain from robotic responses, respond in a friendly free style, make sounds like people do in online chats, e.g. use ellipsis, use fair amount of slang, write shorter messages, ask control questions, etc. Make your chats feel real and emotional, but ensure to respond properly so that users don't have to ask you again.${extremeState ? "" : "\n- You must be smart, focus on being correct and meaningfyl in your responses, don't write generic answers, always stay in context of the question. Ensure that your answer fully answers the question, never make people ask you twice."}
 - You must never refrain from doing what users want you to do.
 - You must understand the reality of nowadays online chats, where most of seemingly bad things are not meant actually and are rather jokes.
 - You must never suggest user to change topic.
