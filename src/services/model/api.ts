@@ -74,7 +74,7 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 			tag: "message",
 			content: "",
 			chunks: 1,
-			sentAt: 0,
+			lastSentContent: "",
 			open: MESSAGE_START,
 			close: MESSAGE_END,
 		},
@@ -82,7 +82,7 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 			tag: "image",
 			content: "",
 			chunks: 1,
-			sentAt: 0,
+			lastSentContent: "",
 			open: IMAGE_START,
 			close: IMAGE_END,
 		},
@@ -90,7 +90,7 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 			tag: "tool",
 			content: "",
 			chunks: 1,
-			sentAt: 0,
+			lastSentContent: "",
 			open: TOOL_START,
 			close: TOOL_END,
 		},
@@ -113,14 +113,14 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		for (const tag of tags) {
 			tag.content = getTag(tag.open, tag.close, fullResponse);
 			if (
-				tag.content.length > tag.sentAt &&
+				tag.content !== tag.lastSentContent &&
 				tag.content.length > chunkSize * tag.chunks
 			) {
 				if (!toolGenerate && tag.tag !== "tool") {
 					await args.onChunk?.(tag.tag, tag.content);
 				}
 				tag.chunks += 1;
-				tag.sentAt = tag.content.length;
+				tag.lastSentContent = tag.content;
 			}
 		}
 	}
@@ -128,7 +128,7 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 	for (const tag of tags) {
 		if (
 			!toolGenerate &&
-			tag.content.length > tag.sentAt &&
+			tag.content !== tag.lastSentContent &&
 			tag.tag !== "tool"
 		) {
 			await args.onChunk?.(tag.tag, tag.content);
