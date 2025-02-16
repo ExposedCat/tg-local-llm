@@ -8,10 +8,21 @@ import {
 	TOOL_END,
 	TOOL_START,
 } from "./prompt.ts";
+import type { ToolDefinition } from "./types.ts";
 
 const bannedCharacters = Deno.env.get("BAN_CHARACTERS") ?? "";
 
-export const grammar = () =>
+const escapeToolName = (toolName: string) => toolName.replaceAll("_", "-");
+
+const buildToolGrammar = (tool: ToolDefinition) => {
+	const escapedName = escapeToolName(tool.name);
+	const parameters = tool.parameters
+		.map((parameter) => `\\"${parameter.name}\\": (par-string | par-number)`)
+		.join(", ");
+	return `par-tool-${escapedName} ::= "{\\"tool_name\\":\\"${tool.name}\\",\\"parameters\\":{${parameters}}}"`;
+};
+
+export const grammar = (tools: ToolDefinition[] = []) =>
 	`root ::= (sec-message) | (sec-tool) | (sec-tool sec-message) | (sec-message sec-attachment) | (sec-tool sec-message sec-attachment)
 
 par-any ::= ([^${TAG_WRAPPER_OPEN}${TAG_WRAPPER_CLOSE}${bannedCharacters}]{1,5000})
@@ -22,10 +33,10 @@ par-url ::= ("http" par-any)
 
 sec-message ::= "${MESSAGE_START}\n" par-any "\n${MESSAGE_END}\n"
 
-par-s-param ::= "\\"" par-name "\\":" (par-string | par-number)*
-par-params ::= par-s-param ("," par-s-param)*
-par-tool ::= "{\\"tool_name\\":\\"" par-name "\\",\\"parameters\\":{" par-params? "}}"
-sec-tool ::= "${TOOL_START}\n" (par-tool | "") "\n${TOOL_END}\n"
+${tools.map(buildToolGrammar).join("\n")}
+sec-tool ::= "${TOOL_START}\n" ((${tools
+		.map((tool) => escapeToolName(tool.name))
+		.join(" | ")}) | "") "\n${TOOL_END}\n"
 
 sec-attachment ::= "${IMAGE_START}\n" (par-url | "") "\n${IMAGE_END}"
 `;

@@ -121,14 +121,20 @@ messageController
 				finished: boolean | null,
 				tokens: number | null,
 			) => {
-				const actions = `${formatting ? "<blockquote expandable>" : ""}${actionText.trim()}${formatting ? "</blockquote>" : ""}`;
+				const actions = `${
+					formatting ? "<blockquote expandable>" : ""
+				}${actionText.trim()}${formatting ? "</blockquote>" : ""}`;
 				const limit =
 					ctx.chatPreferences.showLimit && tokens !== null
-						? `${makeNote("Message limit", formatting)}: ${((tokens / Number(Deno.env.get("CONTEXT"))) * 100).toFixed(1)}%`
+						? `${makeNote("Message limit", formatting)}: ${(
+								(tokens / Number(Deno.env.get("CONTEXT"))) * 100
+							).toFixed(1)}%`
 						: "";
 				const state = finished ? "" : makeNote("Typing...", formatting);
 				const note = `${limit}${state}`;
-				const message = `${formatting ? markdownToHtml(messageText) : messageText}`;
+				const message = `${
+					formatting ? markdownToHtml(messageText) : messageText
+				}`;
 				return `${actions}\n\n${message}${note}`;
 			};
 
@@ -141,7 +147,7 @@ messageController
 						: undefined,
 					link_preview_options: image
 						? { is_disabled: false, prefer_large_media: true, url: image }
-						: undefined,
+						: { is_is_disabled: true },
 				}) as Parameters<typeof ctx.api.editMessageText>[3];
 
 			const onAction = async (

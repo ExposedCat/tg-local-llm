@@ -54,7 +54,7 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		body: JSON.stringify({
 			stream: true,
 			messages: history,
-			grammar: toolGenerate ? undefined : grammar(),
+			grammar: toolGenerate ? undefined : grammar(args.tools),
 		}),
 	});
 
