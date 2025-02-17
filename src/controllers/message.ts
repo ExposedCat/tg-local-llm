@@ -48,7 +48,10 @@ messageController
 		const chatId = ctx.chat.id;
 		const messageId = ctx.message.message_id;
 
-		const threadId = ctx.message.message_thread_id;
+		const threadId = ctx.message.reply_to_message?.is_topic_message
+			? undefined
+			: ctx.message.message_thread_id;
+
 		let thread = !threadId
 			? null
 			: await getThread({ db: ctx.db, chatId, threadId });
