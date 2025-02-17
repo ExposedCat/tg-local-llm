@@ -10,6 +10,7 @@ const databaseFieldMapping: Record<string, keyof Chat["preferences"]> = {
 	nsfw: "nsfw",
 	extremely: "extremeState",
 	limit: "showLimit",
+	thoughts: "showThoughts",
 };
 
 const preferenceResponses = {
@@ -29,7 +30,17 @@ const preferenceResponses = {
 		input: "boolean",
 		nullable: false,
 		message: (showLimit: boolean) =>
-			`Limit usage will now be ${showLimit ? "displayed" : "hidden"}`,
+			`Limit usage will now be ${
+				showLimit ? "displayed" : "hidden"
+			}. This doesn't affect the actual limit`,
+	},
+	thoughts: {
+		input: "boolean",
+		nullable: false,
+		message: (showThoughts: boolean) =>
+			`Thoughts will now be ${
+				showThoughts ? "displayed" : "hidden"
+			}. This doesn't affect the actual thinking process`,
 	},
 };
 
@@ -42,8 +53,13 @@ preferencesController
 				`AI Preferences
 
 ${ctx.chatPreferences.nsfw ? "🟢" : "🔴"} NSFW
+${ctx.chatPreferences.showThoughts ? "🟢" : "🔴"} Display thoughts
 ${ctx.chatPreferences.showLimit ? "🟢" : "🔴"} Display limit
-${ctx.chatPreferences.extremeState ? `🟢 Extremely ${ctx.chatPreferences.extremeState}` : "🔴 Normal state"}`,
+${
+	ctx.chatPreferences.extremeState
+		? `🟢 Extremely ${ctx.chatPreferences.extremeState}`
+		: "🔴 Normal state"
+}`,
 			);
 			return;
 		}

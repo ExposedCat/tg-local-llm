@@ -6,6 +6,8 @@ import {
 	IMAGE_START,
 	MESSAGE_END,
 	MESSAGE_START,
+	THOUGHTS_END,
+	THOUGHTS_START,
 	TOOL_END,
 	TOOL_START,
 } from "./prompt.ts";
@@ -28,6 +30,7 @@ type ChatGenerateArgs = BaseGenerateArgs & {
 export type GenerateArgs = ToolGenerateArgs | ChatGenerateArgs;
 
 export type GenerateResponse = {
+	thoughts: string;
 	message: string;
 	image: string | null;
 	tool: ToolCall | null;
@@ -94,6 +97,14 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 			open: TOOL_START,
 			close: TOOL_END,
 		},
+		{
+			tag: "thoughts",
+			content: "",
+			chunks: 1,
+			lastSentContent: "",
+			open: THOUGHTS_START,
+			close: THOUGHTS_END,
+		},
 	];
 
 	while (true) {
@@ -135,6 +146,7 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		}
 	}
 
+	const thoughts = tags[3].content;
 	const message = tags[0].content;
 	const image = tags[1].content.trim() || null;
 	const _tool = tags[2].content;
@@ -158,14 +170,23 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		}
 	}
 
-	const messageSection = `${MESSAGE_START}\n${message}\n${MESSAGE_END}`;
+	const thoughtsSection = `${THOUGHTS_START}\n${thoughts}\n${THOUGHTS_END}`;
+	const messageSection = `\n${MESSAGE_START}\n${message}\n${MESSAGE_END}`;
 	const toolSection = tool
 		? `\n${TOOL_START}\n${tool ? JSON.stringify(tool) : ""}\n${TOOL_END}`
 		: "";
 	const attachmentSection = image
 		? `\n${IMAGE_START}\n${image ?? ""}\n${IMAGE_END}`
 		: "";
-	const raw = `${messageSection}${toolSection}${attachmentSection}`;
+	const raw = `${thoughtsSection}${messageSection}${toolSection}${attachmentSection}`;
 
-	return { message, tool, image, raw, tokensUsed, unprocessed: fullResponse };
+	return {
+		message,
+		thoughts,
+		tool,
+		image,
+		raw,
+		tokensUsed,
+		unprocessed: fullResponse,
+	};
 }

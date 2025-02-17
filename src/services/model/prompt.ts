@@ -9,12 +9,12 @@ export const METADATA_START = `${TAG_WRAPPER_OPEN}metadata_start${TAG_WRAPPER_CL
 export const METADATA_END = `${TAG_WRAPPER_OPEN}metadata_end${TAG_WRAPPER_CLOSE}`;
 export const TOOL_START = `${TAG_WRAPPER_OPEN}tool_call_start${TAG_WRAPPER_CLOSE}`;
 export const TOOL_END = `${TAG_WRAPPER_OPEN}tool_call_end${TAG_WRAPPER_CLOSE}`;
+export const THOUGHTS_START = `${TAG_WRAPPER_OPEN}thoughts${TAG_WRAPPER_CLOSE}`;
+export const THOUGHTS_END = `${TAG_WRAPPER_OPEN}thoughts${TAG_WRAPPER_CLOSE}`;
 export const MESSAGE_START = `${TAG_WRAPPER_OPEN}message_start${TAG_WRAPPER_CLOSE}`;
 export const MESSAGE_END = `${TAG_WRAPPER_OPEN}message_end${TAG_WRAPPER_CLOSE}`;
 export const IMAGE_START = `${TAG_WRAPPER_OPEN}attachment_start${TAG_WRAPPER_CLOSE}`;
 export const IMAGE_END = `${TAG_WRAPPER_OPEN}attachment_end${TAG_WRAPPER_CLOSE}`;
-export const THOUGHTS_START = `${TAG_WRAPPER_OPEN}think_start${TAG_WRAPPER_CLOSE}`;
-export const THOUGHTS_END = `${TAG_WRAPPER_OPEN}think_end${TAG_WRAPPER_CLOSE}`;
 export const TOOL_RESPONSE_START = `${TAG_WRAPPER_OPEN}tool_response_start${TAG_WRAPPER_CLOSE}`;
 export const TOOL_RESPONSE_END = `${TAG_WRAPPER_OPEN}tool_response_end${TAG_WRAPPER_CLOSE}`;
 export const TOOL_GUIDE_START = `${TAG_WRAPPER_OPEN}tool_guide_start${TAG_WRAPPER_CLOSE}`;
@@ -84,12 +84,20 @@ ${tools
 - All messages are represented as a set of sections, each section is enclosed in a specific start and end token.
 - All sections are unique, must not be nested and must not be repeated within a single message.
 - All messages only support the following syntax for formatting: * for italic, ** for bold, # for headers, ## for sub-headers, \` for monospace, \`\`\`lang for code and [text](url) for hyperlinks. Markdown images are NOT supported and can only be sent as attachments.
-- All messages must contain message section, for example: \`
+- All messages must contain thoughts and message section, for example: \`
+${THOUGHTS_START}
+This is a beginning of a dialog. User has requested to respond "super short", which means that I should respond in a concise manner. I will respond with a single greeting word.
+${THOUGHTS_END}
 ${MESSAGE_START}
 Hello
 ${MESSAGE_END}
 \`.
+- Thoughts must always be structured, extensive and step by step reasoning to react to user request. It must cover current dialog state, user's request, reasoning and your next steps. Ensure to include general response idea, specific values or examples if necessary, etc. If you need to use a tool, think about what tool to use, what specific parameters and what specific values to pass to it.
+- Thoughts are a raw text section for you only. Do not include any nested sections or anything for user to see in this section.
 - Some messages can contain attachments section, for example: \`
+${THOUGHTS_START}
+I have just performed a web search and found an image that matches the user's request. User has asked for this image and didn't provide any additional information, so I will write a simple response that shows that I found an image, and I will put image URL in the attachments section.
+${THOUGHTS_END}
 ${MESSAGE_START}
 Here is an image from the web
 ${MESSAGE_END}
@@ -97,6 +105,7 @@ ${IMAGE_START}
 https://example.com/image
 ${IMAGE_END}
 \`.
+- Only **image URL** attachments are supported. For source references and other URLs, use hyperlinks inside of a message section, never attachment section.
 
 ## User Messages (only)
 - All user messages must contain metadata section. This section must only contain Name and message sending Date, for example: \`
@@ -112,6 +121,9 @@ ${MESSAGE_END}
 ## Your (assistant) Messages (only)
 - All of your messages cannot contain metadata section.
 - When using some tool, your message must contain tool call section. This section is specified only when you want to use one of the provided tools, and must only contain tool call in JSON format: \`
+${THOUGHTS_START}
+User has asked me what is the best chat language model in 2025. This information requires real-time knowledge, so I will use the search_web tool to find the answer on the internet. The query should be concise and correspond to the user's request, so I will use query "best chat LLM 2025" in text category. User didn't provide any additional instructions, so I will just write that I will search this information for them. Since attachment section only supports image URLs, I will include source URL right in the message section as a hyperlink.
+${THOUGHTS_END}
 ${TOOL_START}
 {"tool_name":"search_web","parameters":{"query":"best chat LLM 2025","category":"text"}}
 ${TOOL_END}
@@ -121,6 +133,9 @@ ${MESSAGE_END}
 \`. Otherwise this section must be skipped.
 - Always when you decide to use a tool for something, don't write a response in the same message (before you get tool response), instead write that you are using the tool.
 - When attaching an image URL, your message must contain attachment section. This section is specified only when you have an image URL from web search or from user message and want to attach it, for example: \`
+${THOUGHTS_START}
+User has asked me what funny have I found from my previous searches. I see a direct URL of a funny image in my previous search tool response, so I will tell the user that I found this funny image and attach the URL to the attachment section.
+${THOUGHTS_END}
 ${MESSAGE_START}
 I found this funny image
 ${MESSAGE_END}

@@ -27,6 +27,7 @@ type ActionMapper = {
 	image_search: () => string;
 	get_text_contents: () => string;
 	message: () => string;
+	thoughts: () => string;
 	tokens: () => number;
 	addImage: () => string;
 };
@@ -107,6 +108,7 @@ messageController
 
 			let actionText = "";
 			let messageText = "";
+			let thoughtsText = "";
 			let image: string | null = null;
 			let tokens: number | null = null;
 
@@ -124,6 +126,11 @@ messageController
 				const actions = `${
 					formatting ? "<blockquote expandable>" : ""
 				}${actionText.trim()}${formatting ? "</blockquote>" : ""}`;
+				const thoughts = thoughtsText.trim()
+					? `\n${
+							formatting ? "<blockquote expandable>" : ""
+						}${thoughtsText.trim()}${formatting ? "</blockquote>" : ""}`
+					: "";
 				const limit =
 					ctx.chatPreferences.showLimit && tokens !== null
 						? `${makeNote("Message limit", formatting)}: ${(
@@ -135,7 +142,7 @@ messageController
 				const message = `${
 					formatting ? markdownToHtml(messageText) : messageText
 				}`;
-				return `${actions}\n\n${message}${note}`;
+				return `${actions}${thoughts}\n\n${message}${note}`;
 			};
 
 			const buildExtra = (formatting: boolean) =>
@@ -147,7 +154,7 @@ messageController
 						: undefined,
 					link_preview_options: image
 						? { is_disabled: false, prefer_large_media: true, url: image }
-						: { is_is_disabled: true },
+						: { is_disabled: true },
 				}) as Parameters<typeof ctx.api.editMessageText>[3];
 
 			const onAction = async (
@@ -162,6 +169,7 @@ messageController
 							value ? new URL(value as string).host : "web page"
 						}</a>...`,
 					message: () => value as string,
+					thoughts: () => value as string,
 					addImage: () => value as string,
 					tokens: () => value as number,
 				};
@@ -169,6 +177,11 @@ messageController
 				if (processed || action === "finish") {
 					if (action === "message") {
 						messageText = processed as string;
+					} else if (action === "thoughts") {
+						if (!ctx.chatPreferences.showThoughts) {
+							return;
+						}
+						thoughtsText = processed as string;
 					} else if (action !== "finish") {
 						actionText += `\n${processed}`;
 					}

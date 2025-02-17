@@ -1,4 +1,3 @@
-import { IMAGE_START } from "../model/prompt.ts";
 import type { ToolDefinition } from "../model/types.ts";
 import { buildToolResponse } from "./utils.ts";
 
@@ -94,7 +93,7 @@ export async function callWebSearchTool(query: string, category = "text") {
 		? `${
 				category === "text"
 					? "Now you must use get_text_contents tool to read the most relevant URL."
-					: `You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in a ${IMAGE_START} section`
+					: "You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in attachment section"
 			}. Note that this ${
 				category === "image" ? "source" : "URL"
 			} list is supplied by your internal Web Browser, not user, so don't ask user which ${

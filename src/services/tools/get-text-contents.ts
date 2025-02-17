@@ -25,7 +25,7 @@ export async function callGetContentsTool(browser: Browser, url: string) {
 
 	const prefix = `Contents of the website "${url}": `;
 	const guide =
-		"Use this extra knowledge from your web search to answer to the last user message in the chat. Respond with actual answer, don't say \"let's search\" or anything like that. Consider adding a source hyperlink.";
+		"Use this extra knowledge from your web search to answer to the last user message in the chat. Respond with actual answer, don't say \"let's search\" or anything like that. Consider adding a source hyperlink to the message section. Don't put anything in attachments section.";
 
 	return buildToolResponse(prefix, summary, guide);
 }

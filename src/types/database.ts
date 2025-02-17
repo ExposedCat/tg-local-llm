@@ -17,6 +17,7 @@ export type ChatPreferences = {
 	nsfw?: boolean;
 	extremeState?: string;
 	showLimit?: boolean;
+	showThoughts?: boolean;
 };
 
 export type Chat = {
