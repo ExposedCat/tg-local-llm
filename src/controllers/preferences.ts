@@ -1,5 +1,5 @@
 import { Composer } from "grammy";
-import { setChatPreferences } from "../services/database.ts";
+import { addChatMemory, setChatPreferences } from "../services/database.ts";
 import { MAIN_NAME } from "../services/model/prompt.ts";
 import type { DefaultContext } from "../types/context.ts";
 import type { Chat } from "../types/database.ts";
@@ -84,4 +84,15 @@ ${
 			[databaseFieldMapping[key]]: typedValue,
 		});
 		await ctx.reply(preferenceResponses[key].message(typedValue as never));
+	});
+
+preferencesController
+	.chatType(["group", "supergroup"])
+	.command("remember", async (ctx) => {
+		if (ctx.match) {
+			await addChatMemory(ctx.chat.id, ctx.db, ctx.match);
+			await ctx.reply("Memory saved");
+		} else {
+			await ctx.reply("Memory not provided");
+		}
 	});

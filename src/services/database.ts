@@ -1,5 +1,8 @@
 import type { Chat, Database } from "../types/database.ts";
 
+export const CHAT_MEMORY_LIMIT = 5;
+export const CHAT_MEMORY_SIZE_LIMIT = 500;
+
 export async function getOrCreateChatPreferences(
 	chatId: number,
 	database: Database,
@@ -10,6 +13,9 @@ export async function getOrCreateChatPreferences(
 			$setOnInsert: {
 				preferences: {
 					nsfw: false,
+					showLimit: false,
+					showThoughts: false,
+					memory: [],
 				},
 			},
 		},
@@ -40,6 +46,25 @@ export async function setChatPreferences(
 		{
 			upsert: true,
 			returnDocument: "after",
+		},
+	);
+}
+
+export async function addChatMemory(
+	chatId: number,
+	database: Database,
+	memory: string,
+) {
+	const truncated = memory.slice(0, CHAT_MEMORY_SIZE_LIMIT);
+	await database.chat.updateOne(
+		{ chatId },
+		{
+			$push: {
+				"preferences.memory": {
+					$each: [truncated],
+					$slice: -CHAT_MEMORY_LIMIT,
+				},
+			},
 		},
 	);
 }

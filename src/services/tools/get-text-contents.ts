@@ -33,13 +33,13 @@ export async function callGetContentsTool(browser: Browser, url: string) {
 export const getContentsTool: ToolDefinition = {
 	name: "get_text_contents",
 	description:
-		"Extracts contents from a websites with text. Use this when you need to read some article or open a webpage.",
+		"Extracts contents from a websites with text. Use this when you need to read given article or open a webpage. Don't use this as a search engine, for search use the search tool.",
 	parameters: [
 		{
 			name: "url",
 			type: "string",
 			description:
-				"URL of the page to get text contents from. Don't use image URLs.",
+				"URL of the page to get text contents from. Never make up URLs on your own.",
 		},
 	],
 };

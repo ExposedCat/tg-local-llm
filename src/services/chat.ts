@@ -5,7 +5,8 @@ import type {
 	ThreadMessage,
 } from "../types/database.ts";
 import { validateURL } from "./formatting.ts";
-import { generate, type GenerateResponse } from "./model/api.ts";
+import { type GenerateResponse, generate } from "./model/api.ts";
+import { grammar } from "./model/grammar.ts";
 import { threaded } from "./model/message.ts";
 import {
 	TOOL_LIMIT_PROMPT,

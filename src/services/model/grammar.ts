@@ -19,7 +19,7 @@ const escapeToolName = (toolName: string) => toolName.replaceAll("_", "-");
 const buildToolGrammar = (tool: ToolDefinition) => {
 	const escapedName = escapeToolName(tool.name);
 	const parameters = tool.parameters
-		.map((parameter) => `"\\"${parameter.name}\\":" (par-string | par-number)`)
+		.map((parameter) => `"\\"${parameter.name}\\":" (par-string | par-number) `)
 		.join('", "');
 	return `par-tool-${escapedName} ::= "{\\"tool_name\\":\\"${tool.name}\\",\\"parameters\\":{"${parameters}"}}"`;
 };

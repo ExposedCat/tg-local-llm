@@ -18,6 +18,7 @@ export type ChatPreferences = {
 	extremeState?: string;
 	showLimit?: boolean;
 	showThoughts?: boolean;
+	memory?: string[];
 };
 
 export type Chat = {
