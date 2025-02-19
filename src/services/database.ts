@@ -68,3 +68,18 @@ export async function addChatMemory(
 		},
 	);
 }
+
+export async function removeChatMemory(
+	chatId: number,
+	database: Database,
+	memory: string,
+) {
+	await database.chat.updateOne(
+		{ chatId },
+		{
+			$pull: {
+				"preferences.memory": memory,
+			},
+		},
+	);
+}

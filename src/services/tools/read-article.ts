@@ -23,23 +23,22 @@ export async function callGetContentsTool(browser: Browser, url: string) {
 		],
 	});
 
-	const prefix = `Contents of the website "${url}": `;
+	const prefix = `Contents of the article "${url}": `;
 	const guide =
-		"Use this extra knowledge from your web search to answer to the last user message in the chat. Respond with actual answer, don't say \"let's search\" or anything like that. Consider adding a source hyperlink to the message section. Don't put anything in attachments section.";
+		"Use this extra knowledge to answer to the last user message in the chat. Respond with actual answer. Consider adding a source hyperlink to the message section.";
 
 	return buildToolResponse(prefix, summary, guide);
 }
 
-export const getContentsTool: ToolDefinition = {
-	name: "get_text_contents",
+export const readArticleTool: ToolDefinition = {
+	name: "read_article",
 	description:
-		"Extracts contents from a websites with text. Use this when you need to read given article or open a webpage. Don't use this as a search engine, for search use the search tool.",
+		"Extract contents from article by URL. Only use this when you were given a URL.",
 	parameters: [
 		{
 			name: "url",
 			type: "string",
-			description:
-				"URL of the page to get text contents from. Never make up URLs on your own.",
+			description: "URL of the page to get text contents from.",
 		},
 	],
 };

@@ -5,21 +5,24 @@ Telegram Local LLM is an AI-powered, fully configurable, smart chat-bot designed
 The project was initiated out of enthusiasm to develop a single, fully local AI assistant that could operate without relying on cloud-based services, able to handle multi-user conversantions, perform background thinking, web search and other features.
 
 ## Result
-- Answers any text/caption messages in group chats when mentioned by name
+### Model
+- Supports Reasoning
+- Supports Web Search (text and image)
+- Supports Web Page Reading (essential part of Web Search)
 - Supports multi-user conversations
-- Supports long conversations via replies
-- Supports simple thinking (reasoning)
-- Supports quote replies
-- Ignores messages starting with `//` for hidden replies
-- Supports TL;DR, analysis, etc. requests by replies
-- Works with images (depends on LLM capabilities)
-- Can use tools such as Web Search (text and image) if you ask for it
-- Responds before tool usage
-- Supports continuous typing (edits message with more text)
+- Supports images (depends on LLM capabilities)
+- Responds before/along with tool usage
 - Minimal censorship
 - Human-like character
-- Various preferences
 - Bullet-proof message structure handling
+### UI
+- Answers any text/caption messages in group chats when mentioned by name
+- Supports long conversations via replies
+- Supports quote replies
+- Supports TL;DR, analysis, etc. requests by replies
+- Ignores messages starting with `//` for hidden replies
+- Supports continuous typing (edits message with more text)
+- Various preferences
 
 ## Stack & Prerequisites
 - Deno (TypeScript)
@@ -51,9 +54,9 @@ The project was initiated out of enthusiasm to develop a single, fully local AI 
 - Next, I had to introduce tools, mainly for Web search. Sending tools along the message text (and potentially other pieces of data in a single message) is only possible with a strictly defined response format. This should be handled in two steps: first, I describe all so-called sections (such as message, tool, etc.) in System Prompt, with examples. This provides knowledge to a model about the structure of the response. This could work well, but sometimes model can misuse sections (write custom sections, use wrong characters, nest sections, etc.) so I leverage [Structured Outputs](https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md) by writing a strict grammar for the response format. Given this, model will technically be unable to break the format.
 - The tricky part, or "σ̌-solution". Just running it as-is, model will almost never respond in a proper format. This is because grammar contains something similar to `<message_start> [any_character] <message_end>`. Given that grammars are not lazy, when model will generate `<message_end>` it will be treated as a part of `[any_character]`, so it won't be required to stop. Given the confusion between grammar requirement and model thinking that it already finished, it will always produce an insane amount of semi-random text. The simple solution is to pick some barely used character, such as `σ̌`, and use it as a wrapper for section tags. Then, I replace `[any_character]` with `[any_character except σ̌]`. This way, whenever the model is writing `σ̌` it will be handled as a part of a required section tag since it can't belong to "any character" part. Later I changed it to `≪` (much less than) and `≫` (much greater than) to not to introduce another language in responses which can make model switch it for no reason.
 - Having implemented a reliable tool usage structure, I've built 2 tools: `search_web` and `get_text_content`. First one uses locally running [SearXNG](https://github.com/searxng/searxng) to retrieve a list of relevant links given `query`. As a response, model receives a bullet list of `source_url`, `title`. Second one uses headless browser to evaluate `document.body.innerText` essentially extracting all text from the web page. Result is passed to a separate LLM call (summarizer) with a request to summarize contents and remove metadata, summary is then given to main (chat context aware) model to respond. The tool is usually used after `search_web` or when users ask to read a specific URL. Bonus point: to avoid (rather minimise) robot checks and rejections on websites, I add custom User-Agent and some headers - it works much better (see `src/services/browser.ts`).
-- Given that, we have a few more possibilities. First, I added `category: text|image` to the `search_web` tool. This allows models to search images. Additional `attachment` section is used by model to provide a direct image URL which is then used by client. Also, I updated structure so that model will write `tool_call` section before the `message` section. Meaning, model can now describe what is it doing with tools and client can show this to user before it gets tool response and actual response from the model.
+- Given that, we have a few more possibilities. First, I added `category: text|image` to the `search_web` tool. This allows models to search images. Additional `image` section is used by model to provide a direct image URL which is then used by client. Also, I updated structure so that model will write `tool_call` section before the `message` section. Meaning, model can now describe what is it doing with tools and client can show this to user before it gets tool response and actual response from the model.
 - Simple thinking (reasoning) can now be easily implemented by adding a compulsory `thoughts` section before the `message` section.
-- In addition, I add `tool_guide` section after `tool_response` with instructions on what to do with a specific tool response. For example, with text search, guide section will require model to select a source and use `get_text_content` tool read it. For image search, guide will prohibit extracting text and will require to attach one of the images to the attachment section in the response.
+- In addition, I add `tool_guide` section after `tool_response` with instructions on what to do with a specific tool response. For example, with text search, guide section will require model to select a source and use `get_text_content` tool read it. For image search, guide will prohibit extracting text and will require to provide one of the images in the response.
 - To provide a much nicer experience, I introduced per-chat preferences, such as NSFW roleplay, "extreme state" and message limit (context length) notes. These basically modify system prompt, adjusting model behavior. For instance, you can use `/ai extremely lazy` to make model behave like a lazy person: internally, it will inject an instruction to behave this way and disable some conflicting instructions. Given this, I recommend to generate system prompt every time rather than storing it as a message in the database.
 
 ## Running

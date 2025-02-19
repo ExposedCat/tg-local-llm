@@ -1,5 +1,9 @@
 import { Composer } from "grammy";
-import { addChatMemory, setChatPreferences } from "../services/database.ts";
+import {
+	addChatMemory,
+	removeChatMemory,
+	setChatPreferences,
+} from "../services/database.ts";
 import { MAIN_NAME } from "../services/model/prompt.ts";
 import type { DefaultContext } from "../types/context.ts";
 import type { Chat } from "../types/database.ts";
@@ -59,8 +63,23 @@ ${
 	ctx.chatPreferences.extremeState
 		? `🟢 Extremely ${ctx.chatPreferences.extremeState}`
 		: "🔴 Normal state"
-}`,
+}\n${
+					ctx.chatPreferences.memory
+						? `🟢 ${ctx.chatPreferences.memory.length} memories`
+						: "🔴 No memories"
+				} /ai_memory`,
 			);
+			return;
+		}
+
+		if (field === "remember") {
+			if (_value) {
+				const memory = _value?.join(" ");
+				await addChatMemory(ctx.chat.id, ctx.db, memory);
+				await ctx.reply("Memory saved");
+			} else {
+				await ctx.reply("Memory not provided");
+			}
 			return;
 		}
 
@@ -88,11 +107,38 @@ ${
 
 preferencesController
 	.chatType(["group", "supergroup"])
-	.command("remember", async (ctx) => {
-		if (ctx.match) {
-			await addChatMemory(ctx.chat.id, ctx.db, ctx.match);
-			await ctx.reply("Memory saved");
+	.command("ai_memory", async (ctx) => {
+		const memories = ctx.chatPreferences.memory;
+		if (memories?.length && memories?.length > 0) {
+			await ctx.reply(
+				`${MAIN_NAME}'s memories in this chat:\n\n${memories
+					.map((memory, index) => `✦ ${memory} /airm_${index}`)
+					.join("\n")}`,
+			);
 		} else {
-			await ctx.reply("Memory not provided");
+			await ctx.reply(
+				`${MAIN_NAME} has no chat-specific memories yet. To create:\n/ai remember [memory]`,
+			);
 		}
+		return;
+	});
+
+preferencesController
+	.chatType(["group", "supergroup"])
+	.hears(/^\/airm_(\d+)(?:@.+?)?$/, async (ctx) => {
+		const index = Number.parseInt(ctx.match[1]);
+		if (!ctx.chatPreferences.memory?.at(index)) {
+			await ctx.reply("Invalid memory. See /ai_memory");
+			return;
+		}
+		await removeChatMemory(
+			ctx.chat.id,
+			ctx.db,
+			ctx.chatPreferences.memory[index],
+		);
+		await ctx.reply(
+			`Memory ${index + 1} (${
+				ctx.chatPreferences.memory[index]
+			}) removed.\nNote: indexes updated, see /ai_memory to remove more`,
+		);
 	});

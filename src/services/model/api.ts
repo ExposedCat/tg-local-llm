@@ -2,8 +2,6 @@ import type { ChatPreferences } from "../../types/database.ts";
 import { grammar } from "./grammar.ts";
 import { buildHistory } from "./message.ts";
 import {
-	IMAGE_END,
-	IMAGE_START,
 	MESSAGE_END,
 	MESSAGE_START,
 	THOUGHTS_END,
@@ -82,14 +80,6 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 			close: MESSAGE_END,
 		},
 		{
-			tag: "image",
-			content: "",
-			chunks: 1,
-			lastSentContent: "",
-			open: IMAGE_START,
-			close: IMAGE_END,
-		},
-		{
 			tag: "tool",
 			content: "",
 			chunks: 1,
@@ -146,10 +136,11 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		}
 	}
 
-	const thoughts = tags[3].content;
 	const message = tags[0].content;
-	const image = tags[1].content.trim() || null;
-	const _tool = tags[2].content;
+	const images = Array.from(message.matchAll(/!\[.+?]\((.+?)\)/g)).map(
+		(match) => match[1],
+	);
+	const _tool = tags[1].content;
 	let tool: ToolCall | null = null;
 	if (_tool.trim()) {
 		try {
@@ -169,22 +160,20 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 			console.warn(`Failed to parse tool: ${error}`, _tool);
 		}
 	}
+	const thoughts = tags[2].content;
 
 	const thoughtsSection = `${THOUGHTS_START}\n${thoughts}\n${THOUGHTS_END}`;
 	const messageSection = `\n${MESSAGE_START}\n${message}\n${MESSAGE_END}`;
 	const toolSection = tool
 		? `\n${TOOL_START}\n${tool ? JSON.stringify(tool) : ""}\n${TOOL_END}`
 		: "";
-	const attachmentSection = image
-		? `\n${IMAGE_START}\n${image ?? ""}\n${IMAGE_END}`
-		: "";
-	const raw = `${thoughtsSection}${messageSection}${toolSection}${attachmentSection}`;
+	const raw = `${thoughtsSection}${messageSection}${toolSection}`;
 
 	return {
 		message,
 		thoughts,
 		tool,
-		image,
+		image: images.at(0) ?? null,
 		raw,
 		tokensUsed,
 		unprocessed: fullResponse,

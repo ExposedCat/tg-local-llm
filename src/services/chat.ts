@@ -5,8 +5,7 @@ import type {
 	ThreadMessage,
 } from "../types/database.ts";
 import { validateURL } from "./formatting.ts";
-import { type GenerateResponse, generate } from "./model/api.ts";
-import { grammar } from "./model/grammar.ts";
+import { generate, type GenerateResponse } from "./model/api.ts";
 import { threaded } from "./model/message.ts";
 import {
 	TOOL_LIMIT_PROMPT,
@@ -14,10 +13,7 @@ import {
 	URL_INVALID_PROMPT,
 } from "./model/prompt.ts";
 import type { Message, ToolDefinition } from "./model/types.ts";
-import {
-	callGetContentsTool,
-	getContentsTool,
-} from "./tools/get-text-contents.ts";
+import { callGetContentsTool, readArticleTool } from "./tools/read-article.ts";
 import { callWebSearchTool, searchTool } from "./tools/web-search.ts";
 
 export type RespondArgs = {
@@ -28,10 +24,10 @@ export type RespondArgs = {
 };
 
 const TOOL_USE_LIMIT = 5;
-const TOOLS = [searchTool, getContentsTool];
+const TOOLS = [searchTool, readArticleTool];
 const TOOL_MAP: Record<string, ToolDefinition[] | undefined> = {
-	search_web: [getContentsTool],
-	get_text_contents: [],
+	search_web: [readArticleTool],
+	read_article: [],
 };
 
 async function processResponse(
@@ -60,7 +56,7 @@ async function processResponse(
 			await onAction?.(action, query);
 			const response = await callWebSearchTool(query, category);
 			toolResponse = response;
-		} else if (toolCall?.name === "get_text_contents") {
+		} else if (toolCall?.name === "read_article") {
 			const arg = validateURL(`${toolCall.parameters.url}`);
 			if (arg) {
 				await onAction?.(toolCall.name, arg);

@@ -25,7 +25,7 @@ function booleanToggle(
 type ActionMapper = {
 	web_search: () => string;
 	image_search: () => string;
-	get_text_contents: () => string;
+	read_article: () => string;
 	message: () => string;
 	thoughts: () => string;
 	tokens: () => number;
@@ -167,7 +167,7 @@ messageController
 				const actionLabels: ActionMapper = {
 					web_search: () => `Searching "${value}"...`,
 					image_search: () => `Searching "${value}" (images)...`,
-					get_text_contents: () =>
+					read_article: () =>
 						`Reading <a href="${value}">${
 							value ? new URL(value as string).host : "web page"
 						}</a>...`,

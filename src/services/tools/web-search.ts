@@ -82,7 +82,7 @@ export async function callWebSearchTool(query: string, category = "text") {
 
 	const prefix = ok
 		? `Based on user request, select the most relevant ${
-				category === "image" ? "image" : "URL"
+				category === "image" ? "image" : "article URL"
 			} from this list based on descriptions${
 				category === "image"
 					? ""
@@ -92,12 +92,12 @@ export async function callWebSearchTool(query: string, category = "text") {
 	const guide = ok
 		? `${
 				category === "text"
-					? "Now you must use get_text_contents tool to read the most relevant URL."
-					: "You are not allowed to use get_text_contents now. Pick one image_url which has the most relevant title for the user request. Write a response and attach this image in attachment section"
+					? "Now you must use read_article tool to read the most relevant article."
+					: "You are not allowed to use read_article now. Pick one image_url which has the most relevant title for the user request. Write a response and provide a Markdown image in the response. Use source title as alt for the image."
 			}. Note that this ${
-				category === "image" ? "source" : "URL"
-			} list is supplied by your internal Web Browser, not user, so don't ask user which ${
-				category === "image" ? "source" : "URL"
+				category === "image" ? "image" : "article"
+			} list is supplied by system, not user, so don't ask user which ${
+				category === "image" ? "image" : "article"
 			} to use, pick one yourself based on title relevancy.`
 		: "Tell user the error you got with your web search";
 
@@ -112,7 +112,8 @@ export const searchTool: ToolDefinition = {
 		{
 			name: "query",
 			type: "string",
-			description: "Query to search for.",
+			description:
+				"Query to search for. This must be a simple keyword-based request",
 		},
 		{
 			name: "category",
