@@ -54,7 +54,15 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		method: "POST",
 		body: JSON.stringify({
 			stream: true,
-			messages: history,
+			messages: history.map((message) => ({
+				role: message.role,
+				content: [
+					{ type: "text", text: message.content },
+					...(message.images
+						? message.images.map((image) => ({ type: "image", image }))
+						: []),
+				],
+			})),
 			grammar: toolGenerate ? undefined : grammar(args.tools),
 		}),
 	});
