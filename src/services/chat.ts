@@ -6,7 +6,7 @@ import type {
 } from "../types/database.ts";
 import { validateURL } from "./formatting.ts";
 import { generate, type GenerateResponse } from "./model/api.ts";
-import { threaded } from "./model/message.ts";
+import { buildMessage, threaded } from "./model/message.ts";
 import {
 	TOOL_LIMIT_PROMPT,
 	TOOL_UNAVAILABLE_PROMPT,
@@ -27,7 +27,7 @@ const TOOL_USE_LIMIT = 5;
 const TOOLS = [searchTool, readArticleTool];
 const TOOL_MAP: Record<string, ToolDefinition[] | undefined> = {
 	search_web: [readArticleTool],
-	read_article: [],
+	read_article: [searchTool],
 };
 
 async function processResponse(
@@ -38,6 +38,7 @@ async function processResponse(
 	preferences: ChatPreferences,
 	_usage = 0,
 ) {
+	let fallbackTools = TOOLS;
 	let finalResponse = response;
 	const toolCall = response.tool;
 
@@ -48,6 +49,7 @@ async function processResponse(
 
 	if (usage > TOOL_USE_LIMIT && toolCall) {
 		toolResponse = TOOL_LIMIT_PROMPT;
+		fallbackTools = [];
 	} else {
 		if (toolCall?.name === "search_web") {
 			const query = toolCall.parameters.query?.toString() ?? "<empty>";
@@ -60,7 +62,11 @@ async function processResponse(
 			const arg = validateURL(`${toolCall.parameters.url}`);
 			if (arg) {
 				await onAction?.(toolCall.name, arg);
-				const response = await callGetContentsTool(browser, arg);
+				const response = await callGetContentsTool({
+					browser,
+					url: arg,
+					history,
+				});
 				toolResponse = response;
 			} else {
 				toolResponse = URL_INVALID_PROMPT;
@@ -75,11 +81,14 @@ async function processResponse(
 			role: "system",
 			content: toolResponse,
 		};
-		history.push(toolResponseEntry);
-		newHistory.push(threaded(toolResponseEntry));
+		history.push(toolResponseEntry, buildMessage("assistant", response.raw));
+		newHistory.push(
+			threaded(toolResponseEntry),
+			threaded(buildMessage("assistant", response.raw)),
+		);
 		const actualResponse = await generate({
 			messages: history,
-			tools: TOOL_MAP[toolCall?.name ?? ""] ?? TOOLS,
+			tools: TOOL_MAP[toolCall?.name ?? ""] ?? fallbackTools,
 			preferences,
 			onChunk: (kind, chunk) => onAction?.(kind, chunk),
 		});

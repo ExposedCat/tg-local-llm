@@ -13,6 +13,8 @@ import type { Message, ToolCall, ToolDefinition } from "./types.ts";
 
 type BaseGenerateArgs = {
 	messages: Message[];
+	size?: "large" | "small";
+	grammar?: string;
 };
 
 type ToolGenerateArgs = BaseGenerateArgs & {
@@ -50,22 +52,26 @@ export async function generate(args: GenerateArgs): Promise<GenerateResponse> {
 		? buildHistory(args.messages, [], null, args.toolPrompt)
 		: buildHistory(args.messages, args.tools, args.preferences);
 
-	const response = await fetch(Deno.env.get("API_URL") ?? "", {
-		method: "POST",
-		body: JSON.stringify({
-			stream: true,
-			messages: history.map((message) => ({
-				role: message.role,
-				content: [
-					{ type: "text", text: message.content },
-					...(message.images
-						? message.images.map((image) => ({ type: "image", image }))
-						: []),
-				],
-			})),
-			grammar: toolGenerate ? undefined : grammar(args.tools),
-		}),
-	});
+	const response = await fetch(
+		Deno.env.get(args.size === "small" ? "SMALL_API_URL" : "API_URL") ?? "",
+		{
+			method: "POST",
+			body: JSON.stringify({
+				stream: true,
+				messages: history.map((message) => ({
+					role: message.role,
+					content: [
+						{ type: "text", text: message.content },
+						...(message.images
+							? message.images.map((image) => ({ type: "image", image }))
+							: []),
+					],
+				})),
+				grammar:
+					args.grammar ?? (toolGenerate ? undefined : grammar(args.tools)),
+			}),
+		},
+	);
 
 	const chunkSize = Number(Deno.env.get("CHUNK_SIZE") ?? 250);
 

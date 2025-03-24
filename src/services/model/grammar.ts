@@ -35,7 +35,7 @@ par-name ::= ([a-z_]+)
 par-number ::= ([0-9]+)
 par-url ::= ("http" ${parAny(250)})
 
-sec-thoughts ::= "${THOUGHTS_START}\nUser Request: " ${parAny(
+sec-thoughts ::= "${THOUGHTS_START}\nDialog State: " ${parAny(
 		5000,
 	)} "\nReasoning: " ${parAny(5000)} "\nNext Steps: " ${parAny(
 		5000,

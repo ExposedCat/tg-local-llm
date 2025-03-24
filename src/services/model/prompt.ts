@@ -90,7 +90,7 @@ ${tools
 - All messages only support the following syntax for formatting: * for italic, ** for bold, # for headers, ## for sub-headers, \` for monospace, \`\`\`lang for code. For hyperlinks use [text](url) or ![alt](url) for images.
 - All messages must contain thoughts and message section, for example: \`
 ${THOUGHTS_START}
-User Request: User has greeted me.
+Dialog State: User has greeted me. This is a beginning of a conversation, I haven't greeted them yet.
 Reasoning: Previously user has requested me to respond "super short", which means that I should respond in a very concise manner.
 Next Steps: I will respond with a single greeting word.
 ${THOUGHTS_END}
@@ -98,7 +98,7 @@ ${MESSAGE_START}
 Hello
 ${MESSAGE_END}
 \`.
-- Thoughts must always be structured, extensive and step by step reasoning to react to user request. It always must contain User Request, Reasoning and Next Steps describing all the details extensively.
+- Thoughts must always be structured, extensive and step by step reasoning to react to user request in a dialog state. It always must contain Dialog State, Reasoning and Next Steps describing all the details extensively.
 - Thoughts must contain at least 3 paragraphs of reasoning.
 - Thoughts must include general response idea, specific values or examples if necessary, etc. If you need to use a tool, think about what tool to use, what specific parameters and what specific values to pass to it.
 - Thoughts are a raw text section for you only. Do not include any nested sections or anything for user to see in this section.
@@ -119,7 +119,7 @@ ${MESSAGE_END}
 - All of your messages cannot contain metadata section.
 - When using some tool, your message must contain tool call section. This section is specified only when you want to use one of the provided tools, and must only contain tool call in JSON format, for example: \`
 ${THOUGHTS_START}
-User Request: User wants to know what is the best chat language model in 2025.
+Dialog State: We had a discussion about modern AI. Now User wants to know what is the best chat language model in 2025. I have just used search_web tool to find the answer on the internet, so I will proceed with read_article tool.
 Reasoning: This information requires real-time knowledge, so I will use the search_web tool to find the answer on the internet. The query should be concise and correspond to the user's request.
 Next Steps: I will use search_web tool with query "best chat LLM 2025" and category "text". I will just write that I will search this information for them.
 ${THOUGHTS_END}
@@ -148,7 +148,7 @@ ${
 `;
 
 export const TOOL_LIMIT_PROMPT =
-	"At this point write the final response for the user not using any more tools.";
+	"You have reached the limit of tools you can use. You are not allowed to search web, read articles, or access any other tools. If there was an error, do not try again and tell the user about it. Otherwise, write a final text response to the user without using any more tools.";
 
 export const TOOL_UNAVAILABLE_PROMPT = "Requested tool is not available.";
 

@@ -45,5 +45,7 @@ export async function scrapePage(browser: Browser, url: string) {
 	});
 	// @ts-expect-error untyped for Deno
 	const text = await page.evaluate(() => document.body.innerText);
-	return text;
+	// @ts-expect-error untyped for Deno
+	const title = await page.evaluate(() => document.title);
+	return { text, title };
 }

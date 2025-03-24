@@ -1,10 +1,10 @@
 import type { ChatPreferences, ThreadMessage } from "../../types/database.ts";
 import {
+	buildSystemPrompt,
 	MESSAGE_END,
 	MESSAGE_START,
 	METADATA_END,
 	METADATA_START,
-	buildSystemPrompt,
 } from "./prompt.ts";
 import type { Message, ToolDefinition } from "./types.ts";
 
@@ -15,7 +15,7 @@ export type BuildUserMessageArgs = {
 };
 
 export function buildMessage(
-	role: "system" | "assistant",
+	role: "system" | "assistant" | "user",
 	response: string,
 	images?: string[],
 ): Message {

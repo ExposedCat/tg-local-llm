@@ -1,27 +1,70 @@
 import type { Browser } from "puppeteer";
 import { scrapePage } from "../browser.ts";
 import { generate } from "../model/api.ts";
-import type { ToolDefinition } from "../model/types.ts";
+import type { Message, ToolDefinition } from "../model/types.ts";
 import { buildToolResponse } from "./utils.ts";
+import { shredContent } from "../model/sub-agents/shredder.ts";
+import { buildMessage } from "../model/message.ts";
 
-export async function callGetContentsTool(browser: Browser, url: string) {
+type GetContentsToolArgs = {
+	browser: Browser;
+	url: string;
+
+	history: Message[];
+};
+
+export async function callGetContentsTool({
+	browser,
+	url,
+	history,
+}: GetContentsToolArgs) {
 	let content: string;
+	let title: string | null = null;
 	try {
-		content = await scrapePage(browser, url);
+		const page = await scrapePage(browser, url);
+		content = page.text;
+		title = page.title;
 	} catch {
 		content = `Requested URL "${url}" is invalid. Don't make up URLs, use one exactly from search results or user request.`;
 	}
 
-	const { unprocessed: summary } = await generate({
-		toolPrompt:
-			"Given raw website contents, write a concise and structured summary without missing anything important. Ignore metadata irrelevant to the page topic.",
-		messages: [
-			{
-				role: "user",
-				content: `Contents: \`\`\`${content}\`\`\``,
-			},
-		],
-	});
+	let summary = `There was an unknown error reading article "${title}".`;
+	if (title) {
+		const headers = await shredContent(content, title);
+		if (Object.keys(headers).length !== 0) {
+			const headerList = Object.keys(headers)
+				.map((header, index) => `${index + 1}. ${header}`)
+				.join("\n");
+
+			const { unprocessed: selection } = await generate({
+				toolPrompt: "",
+				messages: [
+					...history,
+					buildMessage(
+						"system",
+						`Given the following titles, select 1 or 2 (select 2 only if 1 would not be enough) which are the most relevant to the user's question and respond with a comma-separated array of indices:
+\`\`\`${headerList}\`\`\``,
+					),
+				],
+				grammar: 'root ::= "[" [0-9]+ (("," [0-9]+) | "") "]"',
+			});
+
+			const titles = selection.slice(1, -1).split(",").map(Number);
+			const values = Object.values(headers);
+			content = titles.map((title) => values[title - 1]).join("\n\n");
+			const { unprocessed } = await generate({
+				toolPrompt:
+					"Given raw website contents, write a concise and structured summary without missing anything important. Ignore metadata irrelevant to the page topic. Ensure that the summary contains all exact numbers, objects, events, people, details and facts! If there is an error, provide a detailed explanation of the error along with unmodified error message.",
+				messages: [
+					{
+						role: "user",
+						content: `Contents: \`\`\`${content}\`\`\``,
+					},
+				],
+			});
+			summary = unprocessed;
+		}
+	}
 
 	const prefix = `Contents of the article "${url}": `;
 	const guide =

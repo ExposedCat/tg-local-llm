@@ -7,7 +7,7 @@ After=network-online.target
 Environment="CUDA_VISIBLE_DEVICES=0"
 Type=simple
 WorkingDirectory=$DIR
-ExecStart=$LLAMACPP_HOME/llama-server --model $MODEL_PATH -ngl 49 --no-webui --port 8181 -mg 0 -c 20000
+ExecStart=$LLAMACPP_HOME/llama-server --model $MODEL_PATH -ngl 49 --no-webui --port $PORT -mg 0 -c $CONTEXT
 Restart=always
 
 [Install]

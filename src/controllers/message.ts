@@ -11,6 +11,7 @@ import { NAMES } from "../services/model/prompt.ts";
 import { createThread, getThread, updateThread } from "../services/thread.ts";
 import type { DefaultContext } from "../types/context.ts";
 import type { ThreadMessage } from "../types/database.ts";
+import { shouldRespond } from "../services/model/sub-agents/validator.ts";
 
 function booleanToggle(
 	callback: (value: boolean) => Promise<void>,
@@ -64,11 +65,12 @@ messageController
 			ctx.message.reply_to_message?.caption ??
 			"<unsupported message>";
 
-		const shouldReply =
+		let shouldReply =
 			(thread ||
 				(replyTo && replyTo === ctx.me.id) ||
 				NAMES.some((name) => rawText.toLowerCase().includes(name))) &&
-			!rawText.startsWith("//");
+			!rawText.startsWith("/");
+		shouldReply &&= await shouldRespond(rawText);
 
 		if (shouldReply) {
 			const inputImages: string[] = [];
@@ -220,12 +222,17 @@ messageController
 				}
 			};
 
-			const { response, newHistory } = await answerChatMessage({
+			const chatResponse = await answerChatMessage({
 				browser: ctx.browser,
 				history: [...(thread?.messages ?? []), ...inputMessages],
 				onAction,
 				preferences: ctx.chatPreferences,
 			});
+
+			if (!chatResponse) {
+				return;
+			}
+			const { response, newHistory } = chatResponse;
 
 			if (response.image) {
 				image = response.image;
