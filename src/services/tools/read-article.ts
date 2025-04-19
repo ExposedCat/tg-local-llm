@@ -25,10 +25,10 @@ export async function callGetContentsTool({
 		content = page.text;
 		title = page.title;
 	} catch {
-		content = `Requested URL "${url}" is invalid. Don't make up URLs, use one exactly from search results or user request.`;
+		content = `Requested URL "${url}" is invalid or unavailable. Don't make up URLs, use another one from search results or user request.`;
 	}
 
-	let summary = `There was an unknown error reading article "${title}".`;
+	let summary: string | null = null;
 	if (title) {
 		const headers = await shredContent(content, title);
 		if (Object.keys(headers).length !== 0) {
@@ -54,11 +54,11 @@ export async function callGetContentsTool({
 			content = titles.map((title) => values[title - 1]).join("\n\n");
 			const { unprocessed } = await generate({
 				toolPrompt:
-					"Given raw website contents, write a concise and structured summary without missing anything important. Ignore metadata irrelevant to the page topic. Ensure that the summary contains all exact numbers, objects, events, people, details and facts! If there is an error, provide a detailed explanation of the error along with unmodified error message.",
+					"Given raw website contents, write a concise and structured summary without missing anything important. Ignore metadata irrelevant to the page topic. Ensure that the summary contains all exact numbers, objects, events, people, details and facts! If there is an error, provide a detailed explanation of the error along with unmodified error message. If content provided is empty, write 'Article is unavailable'.",
 				messages: [
 					{
 						role: "user",
-						content: `Contents: \`\`\`${content}\`\`\``,
+						content: `Contents: \`\`\`${content}\`\`\`. If this is empty or there is an error, write it in your summary.`,
 					},
 				],
 			});
@@ -66,11 +66,14 @@ export async function callGetContentsTool({
 		}
 	}
 
-	const prefix = `Contents of the article "${url}": `;
-	const guide =
-		"Use this extra knowledge to answer to the last user message in the chat. Respond with actual answer. Consider adding a source hyperlink to the message section.";
+	const prefix = summary
+		? `Contents of the article "${url}": `
+		: `Article "${url}" is either invalid or unavailable.`;
+	const guide = summary
+		? "Now use this extra knowledge to answer to the last user message in the chat, read another article from search results or perform search with another query if something is still missing. Consider adding a source hyperlink to the message section."
+		: "Tell me user that the article you tried to read is either invalid or unavailable. Use `read_article` tool again but with another article from search results or ask user how to proceed.";
 
-	return buildToolResponse(prefix, summary, guide);
+	return buildToolResponse(prefix, summary ?? "<error>", guide);
 }
 
 export const readArticleTool: ToolDefinition = {

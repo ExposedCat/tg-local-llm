@@ -80,7 +80,9 @@ export async function callWebSearchTool(query: string, category = "text") {
 				.join("\n")
 		: `Search Web failed: ${error}.`;
 
-	const prefix = ok
+	const success = ok && resultList.trim().length > 0;
+
+	const prefix = success
 		? `Based on user request, select the most relevant ${
 				category === "image" ? "image" : "article URL"
 			} from this list based on descriptions${
@@ -89,7 +91,7 @@ export async function callWebSearchTool(query: string, category = "text") {
 					: ". Select only URL which describes information you need to respond to the last user message"
 			}: `
 		: "";
-	const guide = ok
+	const guide = success
 		? `${
 				category === "text"
 					? "Now you must use read_article tool to read the most relevant article."
@@ -98,8 +100,12 @@ export async function callWebSearchTool(query: string, category = "text") {
 				category === "image" ? "image" : "article"
 			} list is supplied by system, not user, so don't ask user which ${
 				category === "image" ? "image" : "article"
-			} to use, pick one yourself based on title relevancy.`
-		: "Tell user the error you got with your web search";
+			} to use, pick one yourself based on title relevancy. ${
+				category === "image"
+					? ""
+					: "Don't respond based on given descriptions, only tell the user which article you are going to read, without any details!"
+			}`
+		: "Tell user the error you got with your web search. Ask if user wants to use another query.";
 
 	return buildToolResponse(prefix, resultList, guide);
 }

@@ -25,6 +25,7 @@ function booleanToggle(
 
 type ActionMapper = {
 	web_search: () => string;
+	chunk_end: () => null;
 	image_search: () => string;
 	read_article: () => string;
 	message: () => string;
@@ -112,6 +113,7 @@ messageController
 			await ctx.replyWithChatAction("typing");
 
 			let actionText = "";
+			let fullMessageText = "";
 			let messageText = "";
 			let thoughtsText = "";
 			let image: string | null = null;
@@ -144,8 +146,9 @@ messageController
 						: "";
 				const state = finished ? "" : makeNote("Typing...", formatting);
 				const note = `${limit}${state}`;
+				const rawFullMessage = `${fullMessageText}${fullMessageText && messageText ? "\n\n" : ""}${messageText}`;
 				const message = `${
-					formatting ? markdownToHtml(messageText) : messageText
+					formatting ? markdownToHtml(rawFullMessage) : rawFullMessage
 				}`;
 				return `${actions}${thoughts}\n\n${message}${note}`;
 			};
@@ -177,9 +180,10 @@ messageController
 					thoughts: () => value as string,
 					addImage: () => value as string,
 					tokens: () => value as number,
+					chunk_end: () => null,
 				};
 				const processed = actionLabels[action as keyof ActionMapper]?.();
-				if (processed || action === "finish") {
+				if (processed || action === "finish" || action === "chunk_end") {
 					if (action === "message") {
 						messageText = processed as string;
 					} else if (action === "thoughts") {
@@ -187,6 +191,9 @@ messageController
 							return;
 						}
 						thoughtsText = processed as string;
+					} else if (action === "chunk_end") {
+						fullMessageText += `${fullMessageText ? "\n\n" : ""}${messageText}`;
+						messageText = "";
 					} else if (action !== "finish") {
 						actionText += `\n${processed}`;
 					}

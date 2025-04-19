@@ -28,7 +28,7 @@ const parAny = (max?: number, min?: number, extraBannedCharacters?: string) =>
 	}]{${min ?? 1},${max ?? ""}}`;
 
 export const grammar = (tools: ToolDefinition[] = []) =>
-	`root ::= sec-thoughts ((sec-tool) | (sec-message) | (sec-tool sec-message))
+	`root ::= sec-thoughts ((sec-tool) | (sec-message) | (sec-message sec-tool))
 
 par-string ::= ("\\"" ${parAny(100, undefined, '\\"')} "\\"")
 par-name ::= ([a-z_]+)

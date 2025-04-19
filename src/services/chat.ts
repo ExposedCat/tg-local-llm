@@ -56,18 +56,16 @@ async function processResponse(
 			const category = toolCall.parameters.category?.toString() ?? "text";
 			const action = category === "image" ? "image_search" : "web_search";
 			await onAction?.(action, query);
-			const response = await callWebSearchTool(query, category);
-			toolResponse = response;
+			toolResponse = await callWebSearchTool(query, category);
 		} else if (toolCall?.name === "read_article") {
 			const arg = validateURL(`${toolCall.parameters.url}`);
 			if (arg) {
 				await onAction?.(toolCall.name, arg);
-				const response = await callGetContentsTool({
+				toolResponse = await callGetContentsTool({
 					browser,
 					url: arg,
 					history,
 				});
-				toolResponse = response;
 			} else {
 				toolResponse = URL_INVALID_PROMPT;
 			}
@@ -78,21 +76,22 @@ async function processResponse(
 
 	if (toolResponse !== null) {
 		const toolResponseEntry: Message = {
-			role: "system",
+			role: "user",
 			content: toolResponse,
 		};
-		history.push(toolResponseEntry, buildMessage("assistant", response.raw));
+		history.push(buildMessage("assistant", response.raw), toolResponseEntry);
 		newHistory.push(
-			threaded(toolResponseEntry),
 			threaded(buildMessage("assistant", response.raw)),
+			threaded(toolResponseEntry),
 		);
 		const actualResponse = await generate({
 			messages: history,
 			tools: TOOL_MAP[toolCall?.name ?? ""] ?? fallbackTools,
 			preferences,
-			onChunk: (kind, chunk) => onAction?.(kind, chunk),
+			onChunk: onAction,
 		});
 		if (actualResponse.tool) {
+			await onAction?.("chunk_end");
 			return processResponse(
 				actualResponse,
 				browser,
@@ -104,7 +103,6 @@ async function processResponse(
 		}
 		finalResponse = actualResponse;
 	}
-
 	return {
 		newHistory,
 		response: finalResponse,
@@ -121,8 +119,9 @@ export async function answerChatMessage({
 		messages: history,
 		tools: TOOLS,
 		preferences,
-		onChunk: (kind, chunk) => onAction?.(kind, chunk),
+		onChunk: onAction,
 	});
+	await onAction?.("chunk_end");
 
 	return await processResponse(
 		response,
