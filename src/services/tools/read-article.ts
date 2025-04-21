@@ -70,7 +70,7 @@ export async function callGetContentsTool({
 		? `Contents of the article "${url}": `
 		: `Article "${url}" is either invalid or unavailable.`;
 	const guide = summary
-		? "Now use this extra knowledge to answer to the last user message in the chat, read another article from search results or perform search with another query if something is still missing. Consider adding a source hyperlink to the message section."
+		? "Consider adding a source hyperlink [article name](article url)"
 		: "Tell me user that the article you tried to read is either invalid or unavailable. Use `read_article` tool again but with another article from search results or ask user how to proceed.";
 
 	return buildToolResponse(prefix, summary ?? "<error>", guide);

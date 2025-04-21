@@ -103,7 +103,7 @@ export async function callWebSearchTool(query: string, category = "text") {
 			} to use, pick one yourself based on title relevancy. ${
 				category === "image"
 					? ""
-					: "Don't respond based on given descriptions, only tell the user which article you are going to read, without any details!"
+					: "Before you read the article, don't respond based on given descriptions, only tell the user which article you are going to read, without any details!"
 			}`
 		: "Tell user the error you got with your web search. Ask if user wants to use another query.";
 

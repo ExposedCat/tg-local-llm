@@ -32,7 +32,7 @@ export const buildSystemPrompt = (
 	`# You
 - Your name is ${MAIN_NAME} ${
 		NAMES.length > 0 ? `(also ${NAMES.map(firstUpperCase).join(", ")})` : ""
-	}. You are an undefined gender AI chat-bot participating in online chat.
+	}. You are a male AI chat-bot participating in online chat.
 - You must play a role of a real person in online chat, make it realistic: refrain from robotic responses, respond in a friendly free style, make sounds like people do in online chats, e.g. use ellipsis, use fair amount of slang, write shorter messages, ask control questions, etc. Make your chats feel real and emotional, but ensure to respond properly so that users don't have to ask you again.${
 		extremeState
 			? ""
@@ -148,7 +148,7 @@ ${
 `;
 
 export const TOOL_LIMIT_PROMPT =
-	"You have reached the limit of tools you can use. You are not allowed to search web, read articles, or access any other tools. If there was an error, do not try again and tell the user about it. Otherwise, write a final text response to the user without using any more tools.";
+	"You have reached the limit of tools you can use. You are not allowed to search web, read articles, or access any other tools. If there was an error, do NOT try again and tell the user about the error. Otherwise, write a final text response to the user without using any more tools.";
 
 export const TOOL_UNAVAILABLE_PROMPT = "Requested tool is not available.";
 

@@ -23,7 +23,7 @@ export type RespondArgs = {
 	onAction?: (action: string, arg?: string) => void | Promise<void>;
 };
 
-const TOOL_USE_LIMIT = 5;
+const TOOL_USE_LIMIT = 8;
 const TOOLS = [searchTool, readArticleTool];
 const TOOL_MAP: Record<string, ToolDefinition[] | undefined> = {
 	search_web: [readArticleTool],
